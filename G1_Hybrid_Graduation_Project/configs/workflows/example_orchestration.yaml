@@ -1,0 +1,20 @@
+python_executable: auto
+motion:
+  enabled: true
+  execute: true
+  source_pkl: ../PBHC/example/motion_data/Horse-stance_pose.pkl
+  output_dir: runtime/example_motion
+  fix_part: lower
+  split_index: 12
+base:
+  enabled: true
+  execute: false
+  task_id: Unitree-G1-23Dof-Flat
+  num_envs: 128
+skill:
+  enabled: true
+  execute: true
+  mode: deploy_check
+  motion_file_mode: from_motion_stage
+  deploy_config: ../PBHC/deploy_real/configs/g1_23_std.yaml
+  expect_standard23: true

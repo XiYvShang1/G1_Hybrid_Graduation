@@ -1,0 +1,15 @@
+motions:
+- asset_id: example_pbhc_motion
+  source_repo: GVHMR2PBHC
+  source_path: ../GVHMR2PBHC/outputs/example.npz
+  artifact_path: ../PBHC/outputs/example_motion.pkl
+  artifact_format: pkl
+  expected_fields:
+  - dof
+  - root_rot
+  - root_trans_offset
+  - pose_aa
+  - fps
+  joint_contract_id: g1_23dof_project_contract
+  consumer_pipeline: pbhc_motion_tracking
+  notes: Template motion asset for the first graduation-project phase.

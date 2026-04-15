@@ -27,3 +27,6 @@ tmp_refs/
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+# Project runtime generated reports
+G1_Hybrid_Graduation_Project/runtime/orchestration/last_run_report.txt

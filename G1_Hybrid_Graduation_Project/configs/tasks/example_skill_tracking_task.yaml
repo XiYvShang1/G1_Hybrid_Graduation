@@ -1,0 +1,10 @@
+task_id: g1_skill_motion_tracking
+task_type: skill_motion_tracking
+source_repo: PBHC
+upstream_entry: ../PBHC/humanoidverse/train_agent.py
+required_motion_asset_id: example_pbhc_motion
+expected_outputs:
+  - skill policy artifact
+  - training config snapshot
+  - deploy handoff metadata
+notes: Template for registering a PBHC motion-tracking skill policy.

@@ -1,0 +1,10 @@
+task_id: g1_base_velocity_flat
+task_type: base_locomotion
+source_repo: unitree_rl_mjlab
+upstream_entry: ../unitree_rl_mjlab/scripts/train.py
+upstream_task_id: Unitree-G1-23Dof-Flat
+expected_outputs:
+  - policy artifact
+  - deploy.yaml
+  - training log
+notes: Template for registering a conservative base velocity policy.
