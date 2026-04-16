@@ -26,6 +26,33 @@
 | `unitree_rl_mjlab/` | 基础运动能力线 | G1 23DoF 速度跟踪、基础 locomotion、MuJoCo 训练与部署参数参考 |
 | `PBHC/` | 技能动作与部署语义主线 | 动作重定向、动作跟踪训练、策略导出、MuJoCo / URCI / 实机部署 handoff |
 
+## 环境依赖与安装
+
+### 基础依赖
+
+- Python 3.8+
+- NumPy
+- PyYAML
+
+### 快速安装
+
+```bash
+# 克隆本仓库
+git clone https://github.com/XiYvShang1/G1_Hybrid_Graduation.git
+cd G1_Hybrid_Graduation
+
+# 安装基础依赖
+pip install numpy pyyaml
+```
+
+### 可选依赖（根据使用的模块）
+
+如果你需要使用完整的训练和部署流程，还需要安装对应上游仓库的依赖：
+
+- **GVHMR2PBHC**: 参考 [GVHMR2PBHC 文档](https://github.com/Book15011/GVHMR2PBHC)
+- **PBHC**: 参考 [PBHC INSTALL.md](https://github.com/TeleHuman/PBHC)
+- **unitree_rl_mjlab**: 参考 [unitree_rl_mjlab 文档](https://github.com/mujocolab/mjlab)
+
 ## 第一阶段目标
 
 第一阶段只做新主仓骨架和合同模板，不重写旧仓库训练框架：
@@ -121,3 +148,31 @@ registry/    动作资产、训练任务、策略产物注册表
 configs/     示例配置与 handoff 模板
 scripts/     常用状态查看与示例闭环脚本
 ```
+
+## 致谢与参考项目
+
+本项目建立在以下优秀开源项目的基础之上：
+
+### PBHC (KungfuBot)
+- **项目页**: https://kungfu-bot.github.io/
+- **论文**: https://arxiv.org/abs/2506.12851
+- **描述**: Physics-Based Humanoid Whole-Body Control for Learning Highly-Dynamic Skills
+- **作者**: Xie et al. (China Telecom AI, Shanghai Jiao Tong University, etc.)
+- **License**: CC BY-NC 4.0
+
+### GVHMR2PBHC
+- **GitHub**: https://github.com/Book15011/GVHMR2PBHC
+- **描述**: 视频到机器人动作的完整 pipeline，包含 GVHMR 提取、格式转换、PBHC 重定向、运动平滑等功能
+- **核心功能**: 从 MP4 视频提取 SMPL 运动，转换为 Unitree G1 训练可用的格式
+
+### unitree_rl_mjlab
+- **基于**: [mjlab](https://github.com/mujocolab/mjlab)
+- **描述**: 基于 MuJoCo 的 Unitree 机器人强化学习框架
+- **支持机器人**: Unitree Go2, A2, G1, H1_2, R1
+- **核心功能**: 速度跟踪训练、动作模仿训练、Sim2Real 部署
+
+### 其他参考项目
+- [GVHMR](https://github.com/zju3dv/GVHMR): 从视频提取人体运动
+- [ASAP](https://github.com/LeCAR-Lab/ASAP): RL 代码库基础
+- [RSL_RL](https://github.com/leggedrobotics/rsl_rl): PPO 算法实现
+- [MuJoCo](https://github.com/google-deepmind/mujoco): 物理仿真引擎
