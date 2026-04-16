@@ -63,7 +63,7 @@ class MJLabAdapter:
         status = "ready" if not missing else "blocked_missing_paths"
 
         return {
-            "adapter": "unitree_rl_mjlab",
+            "adapter": "base_domain",
             "repo_root": str(self.repo_root),
             "upstream_task_id": upstream_task_id,
             "train_entry": str(self.train_entry),

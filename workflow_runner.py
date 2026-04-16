@@ -145,7 +145,7 @@ class WorkflowRunner:
                     ],
                     cwd=self.gvhmr.repo_root,
                     execute_enabled=bool(motion_cfg.get("execute", True)),
-                    note="使用 GVHMR2PBHC 的 modify_motion.py 生成稳定化 motion pkl",
+                    note="执行动作资产处理脚本生成稳定化 motion pkl",
                     expected_output=motion_output,
                 )
             )
@@ -160,7 +160,7 @@ class WorkflowRunner:
             if importlib.util.find_spec("mjlab") is None:
                 missing_base_dependencies.append("mjlab")
 
-            base_note = "使用 unitree_rl_mjlab 启动基础速度训练命令"
+            base_note = "执行基础策略训练入口命令"
             if missing_base_dependencies:
                 base_note += f" | blocked: missing dependencies {', '.join(missing_base_dependencies)}"
 
@@ -221,7 +221,7 @@ class WorkflowRunner:
                         ),
                         cwd=self.pbhc.repo_root,
                         execute_enabled=bool(skill_cfg.get("execute", False)),
-                        note="使用 PBHC deploy consistency check 验证 motion 与 deploy config 的一致性",
+                        note="执行技能域 deploy consistency check 验证 motion 与 deploy config 的一致性",
                         expected_output=None,
                         precheck_command=[
                             python_exe,
@@ -263,7 +263,7 @@ class WorkflowRunner:
                         ],
                         cwd=self.pbhc.repo_root,
                         execute_enabled=bool(skill_cfg.get("execute", False)),
-                        note="使用 PBHC 启动技能动作训练命令",
+                        note="执行技能策略训练入口命令",
                         expected_output=None,
                         precheck_command=None,
                     )

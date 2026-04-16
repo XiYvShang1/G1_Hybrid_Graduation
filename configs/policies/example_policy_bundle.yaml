@@ -1,6 +1,6 @@
 policy_id: example_base_velocity_policy
 policy_type: base_locomotion
-source_repo: unitree_rl_mjlab
+source_repo: base_domain
 task_id: g1_base_velocity_flat
 artifact_path: ../unitree_rl_mjlab/logs/example/policy.onnx
 config_paths:

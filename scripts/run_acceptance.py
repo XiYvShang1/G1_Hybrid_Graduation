@@ -45,7 +45,7 @@ def main() -> None:
         ),
         (
             [python, "-m", "cli", "status"],
-            ["example_pbhc_motion", "example_skill_policy"],
+            ["example_motion_asset", "example_skill_policy"],
         ),
         (
             [python, "-m", "unittest", "tests.test_cli_smoke"],
@@ -68,7 +68,7 @@ def main() -> None:
                 "--config",
                 str(PROJECT_ROOT / "configs" / "assets" / "example_motion_asset.yaml"),
             ],
-            ["asset_id: example_pbhc_motion"],
+            ["asset_id: example_motion_asset"],
         ),
         (
             [
@@ -101,15 +101,15 @@ def main() -> None:
         ),
         (
             [python, "-m", "pipelines.build_motion_asset"],
-            ["registered_to", "GVHMR2PBHC"],
+            ["registered_to", "motion_domain"],
         ),
         (
             [python, "-m", "pipelines.train_base_policy"],
-            ["registered_to", "Unitree-G1-23Dof-Flat"],
+            ["registered_to", "base_domain"],
         ),
         (
             [python, "-m", "pipelines.train_skill_policy"],
-            ["registered_to", "PBHC"],
+            ["registered_to", "skill_domain"],
         ),
         (
             [

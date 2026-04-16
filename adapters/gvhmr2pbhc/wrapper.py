@@ -57,7 +57,7 @@ class GVHMR2PBHCAdapter:
         status = "ready" if not missing else "blocked_missing_paths"
 
         return {
-            "adapter": "GVHMR2PBHC",
+            "adapter": "motion_domain",
             "repo_root": str(self.repo_root),
             "source_path": str(source_path),
             "target_path": str(target_path),

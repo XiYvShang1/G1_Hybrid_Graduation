@@ -63,7 +63,7 @@ class PBHCAdapter:
         status = "ready" if not missing else "blocked_missing_paths"
 
         return {
-            "adapter": "PBHC",
+            "adapter": "skill_domain",
             "repo_root": str(self.repo_root),
             "motion_asset_id": motion_asset_id,
             "task_name": task_name,

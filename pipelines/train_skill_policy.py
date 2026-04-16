@@ -17,7 +17,7 @@ def main() -> None:
     workspace_root = detect_workspace_root(project_root)
     adapter = PBHCAdapter(workspace_root / "PBHC")
     plan = adapter.build_skill_policy_plan(
-        motion_asset_id="example_pbhc_motion",
+        motion_asset_id="example_motion_asset",
         task_name="g1_skill_motion_tracking",
     )
     config_path = (

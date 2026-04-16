@@ -1,11 +1,11 @@
 policy_id: example_skill_policy
 policy_type: skill_motion_tracking
-source_repo: PBHC
+source_repo: skill_domain
 task_id: g1_skill_motion_tracking
 artifact_path: ../PBHC/outputs/example_skill_policy.onnx
 config_paths:
   - ../PBHC/humanoidverse/config/exp/motion_tracking.yaml
-motion_asset_id: example_pbhc_motion
+motion_asset_id: example_motion_asset
 joint_contract_id: g1_23dof_project_contract
 deploy_contract_id: example_skill_deploy_handoff
 status: template

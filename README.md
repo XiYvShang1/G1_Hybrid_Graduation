@@ -1,4 +1,3 @@
-/usr/bin/bash: /home/xiyv/miniconda3/lib/libtinfo.so.6: no version information available (required by /usr/bin/bash)
 # G1 混合式动作策略项目
 
 本项目是面向 Unitree G1 机器人的混合工程主仓，用于把工作区内已有的三条能力线组织成一条清晰、可扩展的技术主链：
@@ -165,16 +164,10 @@ scripts/     常用状态查看与示例闭环脚本
 
 本项目为独立工程实现，仓库结构、合同层与编排方式均按本项目目标自行设计。
 
-在方法论与工程实践上，参考了以下公开资料（按主题列出）：
+参考资料采用「能力域归档」方式维护：
 
-- 动作重建与动作资产处理：
-  - [GVHMR](https://github.com/zju3dv/GVHMR)
-  - [GVHMR2PBHC](https://github.com/Book15011/GVHMR2PBHC)
-- 动作技能训练与部署语义：
-  - [PBHC / KungfuBot](https://kungfu-bot.github.io/)
-  - [PBHC 论文](https://arxiv.org/abs/2506.12851)
-- 强化学习训练与仿真基础：
-  - [mjlab](https://github.com/mujocolab/mjlab)
-  - [ASAP](https://github.com/LeCAR-Lab/ASAP)
-  - [RSL_RL](https://github.com/leggedrobotics/rsl_rl)
-  - [MuJoCo](https://github.com/google-deepmind/mujoco)
+- 动作资产处理相关公开论文与开源实现
+- 技能策略训练与部署交接相关公开论文与开源实现
+- 强化学习训练与仿真基础框架相关公开论文与开源实现
+
+说明：本仓库不绑定单一外部项目名，不依赖外部项目命名体系作为对外叙事。

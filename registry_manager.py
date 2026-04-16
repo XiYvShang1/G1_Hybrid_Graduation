@@ -252,11 +252,11 @@ def build_closure_report(bundle: RegistryBundle) -> str:
         "G1 混合毕设项目最小闭环报告",
         "=" * 28,
         "闭环主线:",
-        "1. 动作资产：GVHMR2PBHC -> PBHC 兼容 motion asset",
-        "2. 基础任务：unitree_rl_mjlab velocity task",
-        "3. 技能任务：PBHC motion tracking task",
-        "4. 基础策略：unitree_rl_mjlab policy artifact",
-        "5. 技能策略：PBHC skill policy artifact",
+        "1. 动作资产：动作源输入 -> 标准化 motion asset",
+        "2. 基础任务：基础策略训练任务",
+        "3. 技能任务：技能策略训练任务",
+        "4. 基础策略：基础策略产物登记",
+        "5. 技能策略：技能策略产物登记",
         "",
     ]
 
