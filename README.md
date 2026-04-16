@@ -1,6 +1,6 @@
-# G1 混合式动作策略毕业设计项目
+# G1 混合式动作策略项目
 
-本项目是面向 Unitree G1 机器人的毕业设计级混合工程主仓，用于把工作区内已有的三条能力线组织成一条清晰、可答辩、可扩展的技术主链：
+本项目是面向 Unitree G1 机器人的混合工程主仓，用于把工作区内已有的三条能力线组织成一条清晰、可扩展的技术主链：
 
 ```text
 动作数据 / 视频源
@@ -34,7 +34,7 @@
 2. 建立统一任务注册方式。
 3. 建立统一策略产物注册方式。
 4. 建立训练到部署的交接清单。
-5. 为后续一键 pipeline、答辩演示和论文配图提供稳定目录结构。
+5. 为后续一键 pipeline 和项目展示提供稳定目录结构。
 
 ## 推荐工作流
 
@@ -66,32 +66,32 @@
 
 当前仓库已经升级出最小可执行骨架：
 
-- `python -m G1_Hybrid_Graduation_Project.cli status`
+- `python -m cli status`
   - 读取 `registry/` 下的 motion / task / policy 注册表并输出项目状态。
-- `python -m G1_Hybrid_Graduation_Project.cli check-paths`
+- `python -m cli check-paths`
   - 检查 registry 中记录的关键路径在当前工作区内是否存在。
-- `python -m G1_Hybrid_Graduation_Project.cli show-closure`
-  - 输出当前毕设项目的最小闭环报告，适合答辩展示。
-- `python -m G1_Hybrid_Graduation_Project.cli add-motion --config <yaml>`
+- `python -m cli show-closure`
+  - 输出当前项目的最小闭环报告。
+- `python -m cli add-motion --config <yaml>`
   - 从配置文件向 registry 注册动作资产；同 ID 会覆盖更新，不会重复膨胀。
-- `python -m G1_Hybrid_Graduation_Project.cli add-task --config <yaml>`
+- `python -m cli add-task --config <yaml>`
   - 从配置文件向 registry 注册训练任务；同 ID 会覆盖更新，不会重复膨胀。
-- `python -m G1_Hybrid_Graduation_Project.cli add-policy --config <yaml>`
+- `python -m cli add-policy --config <yaml>`
   - 从配置文件向 registry 注册策略产物；同 ID 会覆盖更新，不会重复膨胀。
-- `python -m G1_Hybrid_Graduation_Project.cli reset-example-registry`
+- `python -m cli reset-example-registry`
   - 将 registry 重置为当前示例配置，方便反复测试。
-- `python -m G1_Hybrid_Graduation_Project.pipelines.build_motion_asset`
+- `python -m pipelines.build_motion_asset`
   - 输出 GVHMR2PBHC 动作资产构建 wrapper 计划，并向 registry 追加示例动作资产。
-- `python -m G1_Hybrid_Graduation_Project.pipelines.train_base_policy`
+- `python -m pipelines.train_base_policy`
   - 输出 mjlab 基础速度策略 wrapper 计划，并向 registry 追加示例基础任务。
-- `python -m G1_Hybrid_Graduation_Project.pipelines.train_skill_policy`
+- `python -m pipelines.train_skill_policy`
   - 输出 PBHC 技能动作策略 wrapper 计划，并向 registry 追加示例技能任务。
-- `python -m G1_Hybrid_Graduation_Project.cli workflow --config G1_Hybrid_Graduation_Project/configs/workflows/example_orchestration.yaml`
+- `python -m cli workflow --config configs/workflows/example_orchestration.yaml`
   - 统一生成 motion/base/skill 三段命令链。
-- `python -m G1_Hybrid_Graduation_Project.cli workflow --config G1_Hybrid_Graduation_Project/configs/workflows/example_orchestration.yaml --execute --stages motion`
+- `python -m cli workflow --config configs/workflows/example_orchestration.yaml --execute --stages motion`
   - 实际执行当前默认可安全执行的 motion 处理阶段，并为其余阶段保留已接通命令入口。
 
-这一步仍然是安全的“可执行骨架”，即：
+这一步仍然是安全的"可执行骨架"，即：
 
 - 已具备统一入口
 - 已具备统一 registry 读取能力
@@ -105,11 +105,11 @@
 当前阶段的自动化验收命令：
 
 ```bash
-python -m unittest G1_Hybrid_Graduation_Project.tests.test_registry_manager
-python -m G1_Hybrid_Graduation_Project.scripts.run_acceptance
+python -m unittest tests.test_registry_manager
+python -m scripts.run_acceptance
 ```
 
-验收范围当前覆盖 registry / CLI / pipeline 模板层，以及新的 workflow 编排层。`export_policy_bundle.py` 和 `validate_deploy_handoff.py` 当前仍是 metadata 模板入口，不计入真实策略导出或真实部署可用性；`workflow --execute` 也只会真正执行配置中 `execute: true` 的阶段，避免在本地无输入/高成本训练环境下伪造“已全跑完”。
+验收范围当前覆盖 registry / CLI / pipeline 模板层，以及新的 workflow 编排层。`export_policy_bundle.py` 和 `validate_deploy_handoff.py` 当前仍是 metadata 模板入口，不计入真实策略导出或真实部署可用性；`workflow --execute` 也只会真正执行配置中 `execute: true` 的阶段，避免在本地无输入/高成本训练环境下伪造"已全跑完"。
 
 ## 目录说明
 
