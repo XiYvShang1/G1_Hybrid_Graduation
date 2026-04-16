@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from path_utils import resolve_workspace_path
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 REGISTRY_FILENAMES = {
@@ -179,7 +181,7 @@ def format_registry_status(bundle: RegistryBundle) -> str:
 
 
 def _resolve_from_project_root(project_root: Path, raw_path: str) -> Path:
-    return (project_root / raw_path).resolve()
+    return resolve_workspace_path(project_root, raw_path)
 
 
 def collect_path_checks(

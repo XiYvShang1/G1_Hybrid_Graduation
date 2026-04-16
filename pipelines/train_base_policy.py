@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from G1_Hybrid_Graduation_Project.adapters.mjlab import MJLabAdapter
-from G1_Hybrid_Graduation_Project.registry_manager import (
+from adapters.mjlab import MJLabAdapter
+from path_utils import detect_workspace_root
+from registry_manager import (
     load_yaml_config,
     upsert_registry_item,
 )
@@ -13,7 +14,7 @@ from G1_Hybrid_Graduation_Project.registry_manager import (
 
 def main() -> None:
     project_root = Path(__file__).resolve().parents[1]
-    workspace_root = project_root.parent
+    workspace_root = detect_workspace_root(project_root)
     adapter = MJLabAdapter(workspace_root / "unitree_rl_mjlab")
     plan = adapter.build_base_policy_plan(upstream_task_id="Unitree-G1-23Dof-Flat")
     config_path = project_root / "configs" / "tasks" / "example_base_velocity_task.yaml"

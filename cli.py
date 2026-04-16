@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from G1_Hybrid_Graduation_Project.registry_manager import (
+from registry_manager import (
     build_closure_report,
     collect_path_checks,
     format_path_checks,
@@ -15,7 +15,7 @@ from G1_Hybrid_Graduation_Project.registry_manager import (
     reset_registry_to_examples,
     upsert_registry_item,
 )
-from G1_Hybrid_Graduation_Project.workflow_runner import WorkflowRunner
+from workflow_runner import WorkflowRunner
 
 
 def _build_parser() -> argparse.ArgumentParser:

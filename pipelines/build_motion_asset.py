@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from G1_Hybrid_Graduation_Project.adapters.gvhmr2pbhc import GVHMR2PBHCAdapter
-from G1_Hybrid_Graduation_Project.registry_manager import (
+from adapters.gvhmr2pbhc import GVHMR2PBHCAdapter
+from path_utils import detect_workspace_root
+from registry_manager import (
     load_yaml_config,
     upsert_registry_item,
 )
@@ -13,7 +14,7 @@ from G1_Hybrid_Graduation_Project.registry_manager import (
 
 def main() -> None:
     project_root = Path(__file__).resolve().parents[1]
-    workspace_root = project_root.parent
+    workspace_root = detect_workspace_root(project_root)
     adapter = GVHMR2PBHCAdapter(workspace_root / "GVHMR2PBHC")
     plan = adapter.build_motion_asset_plan(
         source_path=workspace_root / "GVHMR2PBHC" / "outputs" / "example.npz",

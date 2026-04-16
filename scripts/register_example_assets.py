@@ -1,6 +1,6 @@
 """Print the example registry entries as the current minimal closed loop."""
 
-from G1_Hybrid_Graduation_Project.registry_manager import (
+from registry_manager import (
     build_closure_report,
     load_registry_bundle,
 )

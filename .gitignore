@@ -1,3 +1,4 @@
+/usr/bin/bash: /home/xiyv/miniconda3/lib/libtinfo.so.6: no version information available (required by /usr/bin/bash)
 # Python caches
 __pycache__/
 *.py[cod]
@@ -29,4 +30,5 @@ tmp_refs/
 Thumbs.db
 
 # Project runtime generated reports
-G1_Hybrid_Graduation_Project/runtime/orchestration/last_run_report.txt
+runtime/orchestration/*.log
+runtime/orchestration/last_run_report.txt

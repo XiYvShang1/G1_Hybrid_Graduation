@@ -1,6 +1,6 @@
 """Show current project registry status."""
 
-from G1_Hybrid_Graduation_Project.cli import main
+from cli import main
 
 
 if __name__ == "__main__":

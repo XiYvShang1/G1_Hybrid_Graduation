@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from G1_Hybrid_Graduation_Project.registry_manager import (
+from registry_manager import (
     load_registry_bundle,
     load_yaml_config,
     reset_registry_to_examples,

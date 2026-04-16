@@ -10,10 +10,11 @@ import os
 import importlib.util
 from typing import Any
 
-from G1_Hybrid_Graduation_Project.adapters.gvhmr2pbhc import GVHMR2PBHCAdapter
-from G1_Hybrid_Graduation_Project.adapters.mjlab import MJLabAdapter
-from G1_Hybrid_Graduation_Project.adapters.pbhc import PBHCAdapter
-from G1_Hybrid_Graduation_Project.registry_manager import load_yaml_config
+from adapters.gvhmr2pbhc import GVHMR2PBHCAdapter
+from adapters.mjlab import MJLabAdapter
+from adapters.pbhc import PBHCAdapter
+from path_utils import detect_workspace_root, resolve_workspace_path
+from registry_manager import load_yaml_config
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,7 @@ class StageResult:
 class WorkflowRunner:
     def __init__(self, project_root: Path):
         self.project_root = project_root.resolve()
-        self.workspace_root = self.project_root.parent
+        self.workspace_root = detect_workspace_root(self.project_root)
         self.runtime_dir = self.project_root / "runtime" / "orchestration"
         self.runtime_dir.mkdir(parents=True, exist_ok=True)
 
@@ -124,7 +125,9 @@ class WorkflowRunner:
 
         motion_cfg = workflow_cfg.get("motion", {})
         motion_output = self._motion_output_path(motion_cfg)
-        motion_source = (self.project_root / str(motion_cfg["source_pkl"])).resolve()
+        motion_source = resolve_workspace_path(
+            self.project_root, str(motion_cfg["source_pkl"])
+        )
         if "motion" in selected and motion_cfg.get("enabled", True):
             stages.append(
                 StagePlan(
@@ -188,14 +191,14 @@ class WorkflowRunner:
             if motion_file_mode == "from_motion_stage":
                 motion_file = motion_output
             else:
-                motion_file = (
-                    self.project_root / str(skill_cfg["motion_file"])
-                ).resolve()
+                motion_file = resolve_workspace_path(
+                    self.project_root, str(skill_cfg["motion_file"])
+                )
 
             if skill_mode == "deploy_check":
-                deploy_config = (
-                    self.project_root / str(skill_cfg["deploy_config"])
-                ).resolve()
+                deploy_config = resolve_workspace_path(
+                    self.project_root, str(skill_cfg["deploy_config"])
+                )
                 stages.append(
                     StagePlan(
                         name="skill",
@@ -411,4 +414,3 @@ class WorkflowRunner:
                 ]
             )
         return "\n".join(lines)
-

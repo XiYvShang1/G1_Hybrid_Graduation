@@ -8,13 +8,13 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-WORKSPACE_ROOT = PROJECT_ROOT.parent
+RUN_ROOT = PROJECT_ROOT
 
 
 def _run(command: list[str], expected_substrings: list[str]) -> None:
     completed = subprocess.run(
         command,
-        cwd=WORKSPACE_ROOT,
+        cwd=RUN_ROOT,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -38,28 +38,32 @@ def main() -> None:
             [
                 python,
                 "-m",
-                "G1_Hybrid_Graduation_Project.cli",
+                "cli",
                 "reset-example-registry",
             ],
             ["registry"],
         ),
         (
-            [python, "-m", "G1_Hybrid_Graduation_Project.cli", "status"],
+            [python, "-m", "cli", "status"],
             ["example_pbhc_motion", "example_skill_policy"],
         ),
         (
-            [python, "-m", "G1_Hybrid_Graduation_Project.cli", "check-paths"],
+            [python, "-m", "unittest", "tests.test_cli_smoke"],
+            ["OK"],
+        ),
+        (
+            [python, "-m", "cli", "check-paths"],
             ["g1_base_velocity_flat", "g1_skill_motion_tracking"],
         ),
         (
-            [python, "-m", "G1_Hybrid_Graduation_Project.cli", "show-closure"],
+            [python, "-m", "cli", "show-closure"],
             ["最小闭环", "example_base_velocity_policy"],
         ),
         (
             [
                 python,
                 "-m",
-                "G1_Hybrid_Graduation_Project.cli",
+                "cli",
                 "add-motion",
                 "--config",
                 str(PROJECT_ROOT / "configs" / "assets" / "example_motion_asset.yaml"),
@@ -70,7 +74,7 @@ def main() -> None:
             [
                 python,
                 "-m",
-                "G1_Hybrid_Graduation_Project.cli",
+                "cli",
                 "add-task",
                 "--config",
                 str(
@@ -86,7 +90,7 @@ def main() -> None:
             [
                 python,
                 "-m",
-                "G1_Hybrid_Graduation_Project.cli",
+                "cli",
                 "add-policy",
                 "--config",
                 str(
@@ -96,22 +100,22 @@ def main() -> None:
             ["policy_id: example_base_velocity_policy"],
         ),
         (
-            [python, "-m", "G1_Hybrid_Graduation_Project.pipelines.build_motion_asset"],
+            [python, "-m", "pipelines.build_motion_asset"],
             ["registered_to", "GVHMR2PBHC"],
         ),
         (
-            [python, "-m", "G1_Hybrid_Graduation_Project.pipelines.train_base_policy"],
+            [python, "-m", "pipelines.train_base_policy"],
             ["registered_to", "Unitree-G1-23Dof-Flat"],
         ),
         (
-            [python, "-m", "G1_Hybrid_Graduation_Project.pipelines.train_skill_policy"],
+            [python, "-m", "pipelines.train_skill_policy"],
             ["registered_to", "PBHC"],
         ),
         (
             [
                 python,
                 "-m",
-                "G1_Hybrid_Graduation_Project.cli",
+                "cli",
                 "workflow",
                 "--config",
                 str(
@@ -127,7 +131,7 @@ def main() -> None:
             [
                 python,
                 "-m",
-                "G1_Hybrid_Graduation_Project.cli",
+                "cli",
                 "workflow",
                 "--config",
                 str(
@@ -143,7 +147,7 @@ def main() -> None:
             ["stage: motion", "status: success", "expected_output:"],
         ),
         (
-            [python, "-m", "G1_Hybrid_Graduation_Project.cli", "status"],
+            [python, "-m", "cli", "status"],
             ["动作资产数量: 1", "训练任务数量: 2", "策略产物数量: 2"],
         ),
     ]

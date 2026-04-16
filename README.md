@@ -1,3 +1,4 @@
+/usr/bin/bash: /home/xiyv/miniconda3/lib/libtinfo.so.6: no version information available (required by /usr/bin/bash)
 # G1 混合式动作策略项目
 
 本项目是面向 Unitree G1 机器人的混合工程主仓，用于把工作区内已有的三条能力线组织成一条清晰、可扩展的技术主链：
@@ -12,19 +13,19 @@
 
 ## 项目定位
 
-本项目不是把三个旧仓库粗暴合并成一个大仓，也不是只写一层说明文档，而是采用：
+本仓库是独立的 G1 混合式动作策略工程，不是对任何单一项目的复制或镜像。整体采用：
 
 > **壳工程 + 合同层 + 适配层 + 编排层**
 
-的 partial extraction 架构。
+的架构设计，核心目标是把「动作资产、训练任务、策略产物、部署交接」统一到同一套工程规范中。
 
-三个外部仓库的职责如下：
+当前版本聚焦以下 3 类能力：
 
-| 来源仓库 | 在本项目中的角色 | 主要职责 |
+| 能力域 | 在本项目中的角色 | 主要内容 |
 |---|---|---|
-| `GVHMR2PBHC/` | 动作资产前端 | 视频 / GVHMR / SMPL 结果到 PBHC 兼容动作资产的转换与清洗 |
-| `unitree_rl_mjlab/` | 基础运动能力线 | G1 23DoF 速度跟踪、基础 locomotion、MuJoCo 训练与部署参数参考 |
-| `PBHC/` | 技能动作与部署语义主线 | 动作重定向、动作跟踪训练、策略导出、MuJoCo / URCI / 实机部署 handoff |
+| 动作资产能力 | 资产输入前端 | 动作数据整理、资产标准化、合法性检查 |
+| 基础策略能力 | 基础运动能力线 | 速度跟踪任务编排、基础策略登记、部署参数追踪 |
+| 技能策略能力 | 技能动作能力线 | 技能动作任务编排、策略登记、部署交接语义检查 |
 
 ## 环境依赖与安装
 
@@ -42,16 +43,18 @@ git clone https://github.com/XiYvShang1/G1_Hybrid_Graduation.git
 cd G1_Hybrid_Graduation
 
 # 安装基础依赖
-pip install numpy pyyaml
+pip install -r requirements.txt
 ```
 
 ### 可选依赖（根据使用的模块）
 
-如果你需要使用完整的训练和部署流程，还需要安装对应上游仓库的依赖：
+如果你需要跑完整训练或部署链路，请在工作区准备对应能力域的运行环境（仿真依赖、训练依赖、部署依赖），并将相关脚本路径配置到 `registry/` 与 `configs/` 中。
 
-- **GVHMR2PBHC**: 参考 [GVHMR2PBHC 文档](https://github.com/Book15011/GVHMR2PBHC)
-- **PBHC**: 参考 [PBHC INSTALL.md](https://github.com/TeleHuman/PBHC)
-- **unitree_rl_mjlab**: 参考 [unitree_rl_mjlab 文档](https://github.com/mujocolab/mjlab)
+开发测试环境建议安装：
+
+```bash
+pip install -r requirements-dev.txt
+```
 
 ## 第一阶段目标
 
@@ -67,13 +70,13 @@ pip install numpy pyyaml
 
 ```text
 1. adapters/gvhmr2pbhc
-   读取 GVHMR2PBHC 的 pt/npz/pkl 转换脚本输出，登记 motion asset。
+   负责动作资产输入与标准化，登记 motion asset。
 
 2. adapters/pbhc
-   连接 PBHC retarget / motion tracking / deploy handoff，登记 skill policy。
+   负责技能策略任务入口与部署语义检查，登记 skill policy。
 
 3. adapters/mjlab
-   连接 unitree_rl_mjlab velocity 训练与 deploy.yaml，登记 base locomotion policy。
+   负责基础策略任务入口与部署参数追踪，登记 base locomotion policy。
 
 4. registry
    保存 motion、task、policy 的统一元信息。
@@ -87,7 +90,7 @@ pip install numpy pyyaml
 - 本项目默认只做**本地编辑、服务器运行**的工程组织。
 - 训练仍优先在远程服务器对应仓库内执行。
 - 第一阶段不直接调用实机 lowcmd。
-- 第一阶段不强行统一 PBHC `.pkl` 与 mjlab `.npz` 的底层格式，而是通过合同层显式记录来源、字段、关节语义和消费链路。
+- 第一阶段不强行统一不同能力域中的底层资产格式（如 `.pkl`、`.npz`），而是通过合同层显式记录来源、字段、关节语义和消费链路。
 
 ## 第二阶段升级内容
 
@@ -108,11 +111,11 @@ pip install numpy pyyaml
 - `python -m cli reset-example-registry`
   - 将 registry 重置为当前示例配置，方便反复测试。
 - `python -m pipelines.build_motion_asset`
-  - 输出 GVHMR2PBHC 动作资产构建 wrapper 计划，并向 registry 追加示例动作资产。
+  - 输出动作资产构建 wrapper 计划，并向 registry 追加示例动作资产。
 - `python -m pipelines.train_base_policy`
-  - 输出 mjlab 基础速度策略 wrapper 计划，并向 registry 追加示例基础任务。
+  - 输出基础速度策略 wrapper 计划，并向 registry 追加示例基础任务。
 - `python -m pipelines.train_skill_policy`
-  - 输出 PBHC 技能动作策略 wrapper 计划，并向 registry 追加示例技能任务。
+  - 输出技能动作策略 wrapper 计划，并向 registry 追加示例技能任务。
 - `python -m cli workflow --config configs/workflows/example_orchestration.yaml`
   - 统一生成 motion/base/skill 三段命令链。
 - `python -m cli workflow --config configs/workflows/example_orchestration.yaml --execute --stages motion`
@@ -124,8 +127,8 @@ pip install numpy pyyaml
 - 已具备统一 registry 读取能力
 - 已具备路径存在性检查
 - 已具备闭环摘要报告
-- 已具备三个上游仓库的 wrapper 对象
-- 尚未真正调用上游训练命令
+- 已具备三个能力域的 wrapper 对象
+- 尚未真正调用高成本训练命令
 
 ## 验收测试
 
@@ -133,7 +136,16 @@ pip install numpy pyyaml
 
 ```bash
 python -m unittest tests.test_registry_manager
+python -m unittest tests.test_cli_smoke
 python -m scripts.run_acceptance
+```
+
+如果你偏好统一命令，可以直接使用：
+
+```bash
+make check
+make test
+make acceptance
 ```
 
 验收范围当前覆盖 registry / CLI / pipeline 模板层，以及新的 workflow 编排层。`export_policy_bundle.py` 和 `validate_deploy_handoff.py` 当前仍是 metadata 模板入口，不计入真实策略导出或真实部署可用性；`workflow --execute` 也只会真正执行配置中 `execute: true` 的阶段，避免在本地无输入/高成本训练环境下伪造"已全跑完"。
@@ -141,38 +153,28 @@ python -m scripts.run_acceptance
 ## 目录说明
 
 ```text
-contracts/   跨仓库统一合同层
-adapters/    对 GVHMR2PBHC、PBHC、unitree_rl_mjlab 的封装说明与后续适配代码
+contracts/   跨能力域统一合同层
+adapters/    各能力域运行入口的封装说明与后续适配代码
 pipelines/   新主仓的一键流程入口模板
 registry/    动作资产、训练任务、策略产物注册表
 configs/     示例配置与 handoff 模板
 scripts/     常用状态查看与示例闭环脚本
 ```
 
-## 致谢与参考项目
+## 致谢与技术参考
 
-本项目建立在以下优秀开源项目的基础之上：
+本项目为独立工程实现，仓库结构、合同层与编排方式均按本项目目标自行设计。
 
-### PBHC (KungfuBot)
-- **项目页**: https://kungfu-bot.github.io/
-- **论文**: https://arxiv.org/abs/2506.12851
-- **描述**: Physics-Based Humanoid Whole-Body Control for Learning Highly-Dynamic Skills
-- **作者**: Xie et al. (China Telecom AI, Shanghai Jiao Tong University, etc.)
-- **License**: CC BY-NC 4.0
+在方法论与工程实践上，参考了以下公开资料（按主题列出）：
 
-### GVHMR2PBHC
-- **GitHub**: https://github.com/Book15011/GVHMR2PBHC
-- **描述**: 视频到机器人动作的完整 pipeline，包含 GVHMR 提取、格式转换、PBHC 重定向、运动平滑等功能
-- **核心功能**: 从 MP4 视频提取 SMPL 运动，转换为 Unitree G1 训练可用的格式
-
-### unitree_rl_mjlab
-- **基于**: [mjlab](https://github.com/mujocolab/mjlab)
-- **描述**: 基于 MuJoCo 的 Unitree 机器人强化学习框架
-- **支持机器人**: Unitree Go2, A2, G1, H1_2, R1
-- **核心功能**: 速度跟踪训练、动作模仿训练、Sim2Real 部署
-
-### 其他参考项目
-- [GVHMR](https://github.com/zju3dv/GVHMR): 从视频提取人体运动
-- [ASAP](https://github.com/LeCAR-Lab/ASAP): RL 代码库基础
-- [RSL_RL](https://github.com/leggedrobotics/rsl_rl): PPO 算法实现
-- [MuJoCo](https://github.com/google-deepmind/mujoco): 物理仿真引擎
+- 动作重建与动作资产处理：
+  - [GVHMR](https://github.com/zju3dv/GVHMR)
+  - [GVHMR2PBHC](https://github.com/Book15011/GVHMR2PBHC)
+- 动作技能训练与部署语义：
+  - [PBHC / KungfuBot](https://kungfu-bot.github.io/)
+  - [PBHC 论文](https://arxiv.org/abs/2506.12851)
+- 强化学习训练与仿真基础：
+  - [mjlab](https://github.com/mujocolab/mjlab)
+  - [ASAP](https://github.com/LeCAR-Lab/ASAP)
+  - [RSL_RL](https://github.com/leggedrobotics/rsl_rl)
+  - [MuJoCo](https://github.com/google-deepmind/mujoco)

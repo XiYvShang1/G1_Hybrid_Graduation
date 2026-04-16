@@ -1,17 +1,17 @@
-# PBHC 适配层
+# 技能策略适配层
 
-该适配层负责把 `PBHC/` 中的动作重定向、动作跟踪训练和部署语义恢复能力接入本毕设主仓。
+该适配层用于接入技能动作训练与部署检查能力，并向主仓输出技能任务与策略登记信息。
 
 ## 适配边界
 
-- 输入：SMPL / robot motion `.pkl`、PBHC 训练配置、导出策略。
-- 输出：技能动作策略注册项和部署 handoff 记录。
-- 第一阶段不改 PBHC 内部训练框架，只记录可调用入口和产物位置。
+- 输入：动作资产、技能训练配置、策略导出配置。
+- 输出：技能任务登记项、技能策略登记项、部署 handoff 记录。
+- 当前阶段：优先登记可调用入口与产物位置，不修改外部训练内核。
 
-## 重点旧仓库入口
+## 默认入口（可按需替换）
 
-- `PBHC/smpl_retarget/mink_retarget/convert_fit_motion.py`
-- `PBHC/humanoidverse/train_agent.py`
-- `PBHC/humanoidverse/utils/motion_lib/`
-- `PBHC/humanoidverse/urci.py`
-- `PBHC/DemoTest/new_mjlab_real/`
+- `smpl_retarget/mink_retarget/convert_fit_motion.py`
+- `humanoidverse/train_agent.py`
+- `humanoidverse/utils/motion_lib/`
+- `humanoidverse/urci.py`
+- `DemoTest/new_mjlab_real/`

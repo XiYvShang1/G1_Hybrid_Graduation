@@ -12,57 +12,60 @@
   -> 部署语义恢复与验证
 ```
 
-## 三仓职责边界
+## 能力域职责边界
 
-### GVHMR2PBHC：动作资产前端
+### 1) 动作资产能力域
 
-该仓库负责从 GVHMR 或 SMPL 相关输出中整理出 PBHC 可继续 retarget 和训练的动作资产。它适合作为本项目的上游动作数据入口，而不是训练主仓。
-
-关键语义：
-
-- `.pt -> .npz`
-- `.npz -> PBHC retarget .pkl`
-- motion pkl 清洗、冻结、插值
-- 动作资产合法性检查
-
-### unitree_rl_mjlab：基础能力训练线
-
-该仓库更适合作为 G1 23DoF 基础 locomotion / velocity policy 的来源。它提供 MuJoCo 训练、回放和 sim2real 风格 deploy 参数模板。
+负责动作数据输入、标准化、资产合法性检查与产物登记。
 
 关键语义：
 
-- `Unitree-G1-23Dof-Flat / Rough`
-- velocity command tracking
-- tracking `.npz` motion reference
-- deploy.yaml 中的 obs layout、action scale、default pose、kp/kd
+- 原始动作数据预处理
+- 动作资产转换与清洗
+- motion 产物命名与登记
+- 资产字段一致性检查
 
-### PBHC：动作技能与部署语义主线
+### 2) 基础策略能力域
 
-PBHC 覆盖动作源、重定向、motion tracking 训练、策略导出、MuJoCo/URCI 验证与实机 handoff，是本混合项目的技能动作主线。
+负责基础运动任务入口、训练计划编排、策略信息登记与部署参数追踪。
 
 关键语义：
 
-- SMPL / AMASS / robot motion pkl
-- motion tracking 训练
-- ONNX / JIT 策略产物
-- deploy handoff
-- lowstate -> obs -> action -> hybrid command
+- 基础任务配置与启动命令
+- 训练输出产物登记
+- deploy 参数来源追踪
+- 基础策略可用性检查
+
+### 3) 技能策略能力域
+
+负责技能动作任务入口、技能策略信息登记与部署交接语义检查。
+
+关键语义：
+
+- 技能任务配置与启动命令
+- 技能策略产物登记
+- deploy handoff 元数据检查
+- obs/action 到命令链语义追踪
 
 ## 推荐集成方式
 
 本项目采用壳工程方式：
 
-1. **合同层**记录动作资产、关节顺序、策略产物和部署 handoff。
-2. **适配层**封装旧仓库入口，不复制训练内核。
-3. **注册表**保存本项目能识别和展示的 motion、task、policy。
-4. **pipeline 层**串联流程，并在后续阶段补充真实命令调用。
+1. **合同层**：记录动作资产、关节顺序、策略产物和部署 handoff。
+2. **适配层**：封装能力域入口，避免把训练内核直接耦合到主仓。
+3. **注册表**：保存本项目能识别和展示的 motion、task、policy。
+4. **pipeline 层**：串联流程，并在后续阶段补充真实命令调用。
 
-## 为什么不直接合并训练框架
+## 为什么不直接合并外部训练框架
 
-三个仓库之间存在真实工程缝：
+不同能力域之间存在真实工程缝：
 
-- PBHC 常用 `.pkl` 动作资产，mjlab tracking 更自然使用 `.npz`。
-- PBHC 和 mjlab 的 obs/action/deploy 配置语义不完全一致。
+- 动作资产格式与训练输入格式存在差异（如 `.pkl`、`.npz`）。
+- 观测、动作、部署配置语义并非天然一致。
 - 训练环境、仿真框架、导出路径和依赖链不同。
 
-因此第一阶段只抽取合同层，不抽取训练层。
+因此第一阶段聚焦合同层与编排层，不直接重写训练内核。
+
+## 备注
+
+本仓库是独立工程实现，外部开源项目仅作为技术参考来源。

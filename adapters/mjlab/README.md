@@ -1,18 +1,18 @@
-# unitree_rl_mjlab 适配层
+# 基础策略适配层
 
-该适配层负责把 `unitree_rl_mjlab/` 的 G1 23DoF 基础训练和部署参数纳入本毕设主仓。
+该适配层用于接入基础运动训练能力，并向主仓输出基础任务与策略相关的登记信息。
 
 ## 适配边界
 
-- 输入：mjlab task id、训练配置、motion `.npz`、deploy.yaml。
-- 输出：基础 locomotion 策略注册项和部署 handoff 记录。
-- 第一阶段优先登记 velocity policy，不强行迁移 mjlab 训练代码。
+- 输入：基础任务配置、训练入口、部署参数文件。
+- 输出：基础任务登记项、策略产物登记项、部署交接记录。
+- 当前阶段：优先对接任务入口与参数路径，不迁移外部训练实现。
 
-## 重点旧仓库入口
+## 默认入口（可按需替换）
 
-- `unitree_rl_mjlab/scripts/train.py`
-- `unitree_rl_mjlab/scripts/play.py`
-- `unitree_rl_mjlab/scripts/csv_to_npz.py`
-- `unitree_rl_mjlab/src/tasks/velocity/config/g1_23dof/`
-- `unitree_rl_mjlab/src/assets/robots/unitree_g1/g1_23dof_constants.py`
-- `unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/`
+- `scripts/train.py`
+- `scripts/play.py`
+- `scripts/csv_to_npz.py`
+- `src/tasks/velocity/config/g1_23dof/`
+- `src/assets/robots/unitree_g1/g1_23dof_constants.py`
+- `deploy/robots/g1_23dof/config/policy/velocity/`
