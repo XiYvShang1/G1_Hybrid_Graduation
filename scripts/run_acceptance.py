@@ -1,4 +1,4 @@
-"""Run stage-2 acceptance checks for the hybrid graduation project."""
+"""Run acceptance checks for the G1 hybrid project."""
 
 from __future__ import annotations
 

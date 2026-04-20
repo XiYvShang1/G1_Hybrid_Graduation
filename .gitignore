@@ -32,3 +32,10 @@ Thumbs.db
 # Project runtime generated reports
 runtime/orchestration/*.log
 runtime/orchestration/last_run_report.txt
+runtime/example_motion/example_motion.pkl
+
+# Training engine outputs
+engines/base_locomotion/logs/
+engines/skill_tracking/logs/
+engines/skill_tracking/outputs/
+engines/skill_tracking/wandb/

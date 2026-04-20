@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "g1-hybrid-graduation"
+name = "g1-hybrid"
 version = "0.1.0"
-description = "G1 混合式动作策略工程主仓"
+description = "G1 混合式动作策略工程"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -17,6 +17,20 @@ dependencies = [
 dev = [
   "pytest>=7.0",
 ]
+algorithms = [
+  "mjlab==1.2.0",
+  "tyro",
+  "hydra-core>=1.2.0",
+  "omegaconf",
+  "torch",
+  "mujoco==3.2.3",
+  "rich",
+  "scipy",
+  "tensorboard",
+  "onnx",
+  "onnxruntime",
+  "joblib",
+]
 
 [project.scripts]
 g1-hybrid = "cli:main"
@@ -26,4 +40,4 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["adapters*", "contracts*", "pipelines*", "tests*"]
+include = ["adapters*", "contracts*", "pipelines*", "engines*", "tests*"]

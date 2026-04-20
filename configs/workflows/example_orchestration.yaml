@@ -2,8 +2,9 @@ python_executable: auto
 motion:
   enabled: true
   execute: true
-  source_pkl: ../PBHC/example/motion_data/Horse-stance_pose.pkl
+  source_pkl: engines/skill_tracking/example/motion_data/Horse-stance_pose.pkl
   output_dir: runtime/example_motion
+  output_file: runtime/example_motion/example_motion.pkl
   fix_part: lower
   split_index: 12
 base:
@@ -16,5 +17,5 @@ skill:
   execute: true
   mode: deploy_check
   motion_file_mode: from_motion_stage
-  deploy_config: ../PBHC/deploy_real/configs/g1_23_std.yaml
+  deploy_config: configs/deploy/example_deploy_handoff.yaml
   expect_standard23: true

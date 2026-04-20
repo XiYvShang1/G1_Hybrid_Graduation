@@ -1,1 +1,1 @@
-"""Tests for the G1 hybrid graduation project."""
+"""Tests for the G1 hybrid project."""

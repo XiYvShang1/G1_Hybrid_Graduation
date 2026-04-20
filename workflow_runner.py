@@ -1,4 +1,4 @@
-"""Config-driven command orchestration across GVHMR2PBHC, mjlab, and PBHC."""
+"""Config-driven command orchestration for project-local G1 hybrid stages."""
 
 from __future__ import annotations
 
@@ -7,13 +7,12 @@ from pathlib import Path
 import subprocess
 import sys
 import os
-import importlib.util
 from typing import Any
 
-from adapters.gvhmr2pbhc import GVHMR2PBHCAdapter
-from adapters.mjlab import MJLabAdapter
-from adapters.pbhc import PBHCAdapter
-from path_utils import detect_workspace_root, resolve_workspace_path
+from adapters.base import BasePolicyAdapter
+from adapters.motion import MotionAssetAdapter
+from adapters.skill import SkillPolicyAdapter
+from path_utils import resolve_workspace_path
 from registry_manager import load_yaml_config
 
 
@@ -42,13 +41,12 @@ class StageResult:
 class WorkflowRunner:
     def __init__(self, project_root: Path):
         self.project_root = project_root.resolve()
-        self.workspace_root = detect_workspace_root(self.project_root)
         self.runtime_dir = self.project_root / "runtime" / "orchestration"
         self.runtime_dir.mkdir(parents=True, exist_ok=True)
 
-        self.gvhmr = GVHMR2PBHCAdapter(self.workspace_root / "GVHMR2PBHC")
-        self.mjlab = MJLabAdapter(self.workspace_root / "unitree_rl_mjlab")
-        self.pbhc = PBHCAdapter(self.workspace_root / "PBHC")
+        self.motion = MotionAssetAdapter(self.project_root)
+        self.base = BasePolicyAdapter(self.project_root)
+        self.skill = SkillPolicyAdapter(self.project_root)
 
     def load_workflow(self, config_path: Path) -> dict[str, Any]:
         return load_yaml_config(config_path)
@@ -72,7 +70,7 @@ class WorkflowRunner:
         if configured != "auto":
             return str(configured)
 
-        required_modules = ["numpy", "joblib"]
+        required_modules = ["numpy", "yaml"]
 
         candidates: list[str] = []
         conda_prefix = os.environ.get("CONDA_PREFIX")
@@ -98,7 +96,22 @@ class WorkflowRunner:
 
         return sys.executable
 
+    def _stage_python_executable(
+        self, workflow_cfg: dict[str, Any], stage_cfg: dict[str, Any]
+    ) -> str:
+        configured = stage_cfg.get("python_executable")
+        if configured:
+            return str(resolve_workspace_path(self.project_root, str(configured)))
+        return self._python_executable(workflow_cfg)
+
     def _motion_output_path(self, motion_cfg: dict[str, Any]) -> Path:
+        if "output_file" in motion_cfg:
+            output_file = resolve_workspace_path(
+                self.project_root, str(motion_cfg["output_file"])
+            )
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            return output_file
+
         source = Path(str(motion_cfg["source_pkl"]))
         source_name = source.stem
         fix_part = str(motion_cfg.get("fix_part", "lower"))
@@ -119,11 +132,11 @@ class WorkflowRunner:
         workflow_cfg: dict[str, Any],
         selected_stages: set[str] | None = None,
     ) -> list[StagePlan]:
-        python_exe = self._python_executable(workflow_cfg)
         stages: list[StagePlan] = []
         selected = selected_stages or {"motion", "base", "skill"}
 
         motion_cfg = workflow_cfg.get("motion", {})
+        motion_python = self._stage_python_executable(workflow_cfg, motion_cfg)
         motion_output = self._motion_output_path(motion_cfg)
         motion_source = resolve_workspace_path(
             self.project_root, str(motion_cfg["source_pkl"])
@@ -133,17 +146,17 @@ class WorkflowRunner:
                 StagePlan(
                     name="motion",
                     command=[
-                        python_exe,
-                        str(self.gvhmr.repo_root / "modify_motion.py"),
+                        motion_python,
+                        str(self.motion.processor_script),
                         str(motion_source),
-                        "--output-folder",
-                        str(motion_output.parent),
+                        "--output",
+                        str(motion_output),
                         "--fix-part",
                         str(motion_cfg.get("fix_part", "lower")),
                         "--split-index",
                         str(int(motion_cfg.get("split_index", 12))),
                     ],
-                    cwd=self.gvhmr.repo_root,
+                    cwd=self.project_root,
                     execute_enabled=bool(motion_cfg.get("execute", True)),
                     note="执行动作资产处理脚本生成稳定化 motion pkl",
                     expected_output=motion_output,
@@ -151,38 +164,30 @@ class WorkflowRunner:
             )
 
         base_cfg = workflow_cfg.get("base", {})
+        base_python = self._stage_python_executable(workflow_cfg, base_cfg)
         if "base" in selected and base_cfg.get("enabled", True):
             task_id = str(base_cfg.get("task_id", "Unitree-G1-23Dof-Flat"))
             num_envs = int(base_cfg.get("num_envs", 128))
-            missing_base_dependencies = []
-            if importlib.util.find_spec("tyro") is None:
-                missing_base_dependencies.append("tyro")
-            if importlib.util.find_spec("mjlab") is None:
-                missing_base_dependencies.append("mjlab")
-
-            base_note = "执行基础策略训练入口命令"
-            if missing_base_dependencies:
-                base_note += f" | blocked: missing dependencies {', '.join(missing_base_dependencies)}"
 
             stages.append(
                 StagePlan(
                     name="base",
                     command=[
-                        python_exe,
-                        str(self.mjlab.train_entry),
+                        base_python,
+                        str(self.base.train_entry),
                         task_id,
                         f"--env.scene.num-envs={num_envs}",
                     ],
-                    cwd=self.mjlab.repo_root,
-                    execute_enabled=bool(base_cfg.get("execute", False))
-                    and not missing_base_dependencies,
-                    note=base_note,
+                    cwd=self.base.engine_root,
+                    execute_enabled=bool(base_cfg.get("execute", False)),
+                    note="执行基础策略训练入口命令",
                     expected_output=None,
                     precheck_command=None,
                 )
             )
 
         skill_cfg = workflow_cfg.get("skill", {})
+        skill_python = self._stage_python_executable(workflow_cfg, skill_cfg)
         if "skill" in selected and skill_cfg.get("enabled", True):
             skill_mode = str(skill_cfg.get("mode", "train"))
             motion_file_mode = str(
@@ -203,12 +208,10 @@ class WorkflowRunner:
                     StagePlan(
                         name="skill",
                         command=[
-                            python_exe,
-                            str(
-                                self.pbhc.repo_root
-                                / "deploy_real"
-                                / "check_motion_config_consistency.py"
-                            ),
+                            skill_python,
+                            str(self.skill.deploy_check_entry),
+                            "--policy-id",
+                            str(skill_cfg.get("policy_id", "example_skill_policy")),
                             "--motion",
                             str(motion_file),
                             "--config",
@@ -219,25 +222,11 @@ class WorkflowRunner:
                             if bool(skill_cfg.get("expect_standard23", False))
                             else []
                         ),
-                        cwd=self.pbhc.repo_root,
+                        cwd=self.project_root,
                         execute_enabled=bool(skill_cfg.get("execute", False)),
                         note="执行技能域 deploy consistency check 验证 motion 与 deploy config 的一致性",
                         expected_output=None,
-                        precheck_command=[
-                            python_exe,
-                            str(
-                                self.pbhc.repo_root
-                                / "deploy_real"
-                                / "check_joint_mapping.py"
-                            ),
-                            "--config",
-                            str(deploy_config),
-                        ]
-                        + (
-                            ["--strict-23"]
-                            if bool(skill_cfg.get("expect_standard23", False))
-                            else []
-                        ),
+                        precheck_command=None,
                     )
                 )
             else:
@@ -245,8 +234,8 @@ class WorkflowRunner:
                     StagePlan(
                         name="skill",
                         command=[
-                            python_exe,
-                            str(self.pbhc.train_entry),
+                            skill_python,
+                            str(self.skill.train_entry),
                             "+simulator=isaacgym",
                             "+exp=motion_tracking",
                             "+terrain=terrain_locomotion_plane",
@@ -261,9 +250,9 @@ class WorkflowRunner:
                             f"seed={int(skill_cfg.get('seed', 1))}",
                             f"+device={skill_cfg.get('device', 'cuda:0')}",
                         ],
-                        cwd=self.pbhc.repo_root,
+                        cwd=self.skill.engine_root,
                         execute_enabled=bool(skill_cfg.get("execute", False)),
-                        note="执行技能策略训练入口命令",
+                        note=f"执行技能策略训练入口命令 | motion_file={motion_file}",
                         expected_output=None,
                         precheck_command=None,
                     )

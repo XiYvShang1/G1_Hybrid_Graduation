@@ -2,9 +2,9 @@ policy_id: example_base_velocity_policy
 policy_type: base_locomotion
 source_repo: base_domain
 task_id: g1_base_velocity_flat
-artifact_path: ../unitree_rl_mjlab/logs/example/policy.onnx
+artifact_path: engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/exported/policy.onnx
 config_paths:
-  - ../unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
+  - engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
 joint_contract_id: g1_23dof_project_contract
 deploy_contract_id: example_velocity_deploy_handoff
 status: template

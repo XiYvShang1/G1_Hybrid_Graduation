@@ -1,137 +1,109 @@
-# G1 混合式动作策略项目
+# G1 混合式动作策略工程
 
-本项目是面向 Unitree G1 机器人的混合工程主仓，用于把工作区内已有的三条能力线组织成一条清晰、可扩展的技术主链：
+本项目面向 Unitree G1 机器人，组织动作资产、基础运动策略、技能动作策略和部署交接检查，提供一套可扩展的本地工程主链：
 
 ```text
-动作数据 / 视频源
-  -> 动作重定向与动作资产生成
-  -> 基础速度跟踪训练 / 技能动作跟踪训练
+动作数据
+  -> 动作资产处理
+  -> 基础速度策略 / 技能动作策略
   -> 策略产物注册
-  -> 部署语义恢复与仿真验证
+  -> 部署语义检查
 ```
 
 ## 项目定位
 
-本仓库是独立的 G1 混合式动作策略工程，不是对任何单一项目的复制或镜像。整体采用：
+本仓库采用：
 
-> **壳工程 + 合同层 + 适配层 + 编排层**
+> **合同层 + 适配层 + 注册表 + 编排层**
 
-的架构设计，核心目标是把「动作资产、训练任务、策略产物、部署交接」统一到同一套工程规范中。
+核心目标是把「动作资产、训练任务、策略产物、部署交接」统一到同一套工程规范中，避免能力域之间依赖零散脚本和隐式路径。
 
-当前版本聚焦以下 3 类能力：
-
-| 能力域 | 在本项目中的角色 | 主要内容 |
+| 能力域 | 角色 | 主要内容 |
 |---|---|---|
-| 动作资产能力 | 资产输入前端 | 动作数据整理、资产标准化、合法性检查 |
-| 基础策略能力 | 基础运动能力线 | 速度跟踪任务编排、基础策略登记、部署参数追踪 |
-| 技能策略能力 | 技能动作能力线 | 技能动作任务编排、策略登记、部署交接语义检查 |
+| 动作资产 | 资产输入前端 | 动作数据整理、资产标准化、合法性检查 |
+| 基础策略 | 基础运动能力线 | 速度跟踪任务编排、基础策略登记、部署参数追踪 |
+| 技能策略 | 技能动作能力线 | 技能动作任务编排、策略登记、部署交接语义检查 |
 
-## 环境依赖与安装
-
-### 基础依赖
-
-- Python 3.8+
-- NumPy
-- PyYAML
-
-### 快速安装
+## 安装
 
 ```bash
-# 克隆本仓库
-git clone https://github.com/XiYvShang1/G1_Hybrid_Graduation.git
-cd G1_Hybrid_Graduation
-
-# 安装基础依赖
 pip install -r requirements.txt
 ```
 
-### 可选依赖（根据使用的模块）
-
-如果你需要跑完整训练或部署链路，请在工作区准备对应能力域的运行环境（仿真依赖、训练依赖、部署依赖），并将相关脚本路径配置到 `registry/` 与 `configs/` 中。
-
-开发测试环境建议安装：
+开发测试环境：
 
 ```bash
 pip install -r requirements-dev.txt
 ```
 
-## 第一阶段目标
+训练算法环境：
 
-第一阶段只做新主仓骨架和合同模板，不重写旧仓库训练框架：
-
-1. 建立统一动作资产注册方式。
-2. 建立统一任务注册方式。
-3. 建立统一策略产物注册方式。
-4. 建立训练到部署的交接清单。
-5. 为后续一键 pipeline 和项目展示提供稳定目录结构。
-
-## 推荐工作流
-
-```text
-1. adapters/gvhmr2pbhc
-   负责动作资产输入与标准化，登记 motion asset。
-
-2. adapters/pbhc
-   负责技能策略任务入口与部署语义检查，登记 skill policy。
-
-3. adapters/mjlab
-   负责基础策略任务入口与部署参数追踪，登记 base locomotion policy。
-
-4. registry
-   保存 motion、task、policy 的统一元信息。
-
-5. pipelines
-   串联资产构建、训练任务、策略导出和部署交接验证。
+```bash
+pip install -r requirements-algorithms.txt
 ```
 
-## 当前边界
+## 常用命令
 
-- 本项目默认只做**本地编辑、服务器运行**的工程组织。
-- 训练仍优先在远程服务器对应仓库内执行。
-- 第一阶段不直接调用实机 lowcmd。
-- 第一阶段不强行统一不同能力域中的底层资产格式（如 `.pkl`、`.npz`），而是通过合同层显式记录来源、字段、关节语义和消费链路。
+```bash
+python -m cli status
+python -m cli check-paths
+python -m cli show-closure
+python -m cli reset-example-registry
+python -m cli workflow --config configs/workflows/example_orchestration.yaml
+python -m cli workflow --config configs/workflows/example_orchestration.yaml --execute --stages motion
+python -m cli workflow --config configs/workflows/example_training.yaml
+```
 
-## 第二阶段升级内容
+注册新资产或策略：
 
-当前仓库已经升级出最小可执行骨架：
+```bash
+python -m cli add-motion --config configs/assets/example_motion_asset.yaml
+python -m cli add-task --config configs/tasks/example_base_velocity_task.yaml
+python -m cli add-policy --config configs/policies/example_policy_bundle.yaml
+```
 
-- `python -m cli status`
-  - 读取 `registry/` 下的 motion / task / policy 注册表并输出项目状态。
-- `python -m cli check-paths`
-  - 检查 registry 中记录的关键路径在当前工作区内是否存在。
-- `python -m cli show-closure`
-  - 输出当前项目的最小闭环报告。
-- `python -m cli add-motion --config <yaml>`
-  - 从配置文件向 registry 注册动作资产；同 ID 会覆盖更新，不会重复膨胀。
-- `python -m cli add-task --config <yaml>`
-  - 从配置文件向 registry 注册训练任务；同 ID 会覆盖更新，不会重复膨胀。
-- `python -m cli add-policy --config <yaml>`
-  - 从配置文件向 registry 注册策略产物；同 ID 会覆盖更新，不会重复膨胀。
-- `python -m cli reset-example-registry`
-  - 将 registry 重置为当前示例配置，方便反复测试。
-- `python -m pipelines.build_motion_asset`
-  - 输出动作资产构建 wrapper 计划，并向 registry 追加示例动作资产。
-- `python -m pipelines.train_base_policy`
-  - 输出基础速度策略 wrapper 计划，并向 registry 追加示例基础任务。
-- `python -m pipelines.train_skill_policy`
-  - 输出技能动作策略 wrapper 计划，并向 registry 追加示例技能任务。
-- `python -m cli workflow --config configs/workflows/example_orchestration.yaml`
-  - 统一生成 motion/base/skill 三段命令链。
-- `python -m cli workflow --config configs/workflows/example_orchestration.yaml --execute --stages motion`
-  - 实际执行当前默认可安全执行的 motion 处理阶段，并为其余阶段保留已接通命令入口。
+## 目录说明
 
-这一步仍然是安全的"可执行骨架"，即：
+```text
+contracts/   跨能力域统一合同层
+adapters/    motion/base/skill 三类能力域的入口封装
+engines/     已迁入的基础运动与技能动作训练算法
+pipelines/   项目内动作处理、训练登记、策略导出和部署检查入口
+registry/    动作资产、训练任务、策略产物注册表
+configs/     示例配置和部署交接模板
+runtime/     本地运行产物和编排报告
+scripts/     常用状态查看与验收脚本
+tests/       registry 与 CLI 的回归测试
+```
 
-- 已具备统一入口
-- 已具备统一 registry 读取能力
-- 已具备路径存在性检查
-- 已具备闭环摘要报告
-- 已具备三个能力域的 wrapper 对象
-- 尚未真正调用高成本训练命令
+## 当前能力边界
 
-## 验收测试
+- 已具备统一 CLI 入口。
+- 已具备 motion / task / policy registry 读写能力。
+- 已具备路径存在性检查和最小闭环报告。
+- 已具备 motion / base / skill 三个能力域的本地 adapter。
+- 基础运动训练算法已经迁入 `engines/base_locomotion`。
+- 技能动作跟踪训练算法已经迁入 `engines/skill_tracking`。
+- workflow 默认仍不自动执行高成本训练，需要在配置里显式开启对应阶段。
+- 未完成离线 handoff 校验的策略不应标记为 deploy-ready。
 
-当前阶段的自动化验收命令：
+## 训练入口
+
+基础运动训练入口：
+
+```bash
+cd engines/base_locomotion
+python scripts/train.py Unitree-G1-23Dof-Flat --env.scene.num-envs=128
+```
+
+技能动作跟踪训练入口：
+
+```bash
+cd engines/skill_tracking
+python humanoidverse/train_agent.py +simulator=isaacgym +exp=motion_tracking +terrain=terrain_locomotion_plane project_name=MotionTracking num_envs=128 +obs=motion_tracking/benchmark +robot=g1/g1_23dof_lock_wrist +domain_rand=dr_nil +rewards=motion_tracking/main experiment_name=hybrid_debug robot.motion.motion_file=../../runtime/example_motion/example_motion.pkl seed=1 +device=cuda:0
+```
+
+## 验收
 
 ```bash
 python -m unittest tests.test_registry_manager
@@ -139,35 +111,10 @@ python -m unittest tests.test_cli_smoke
 python -m scripts.run_acceptance
 ```
 
-如果你偏好统一命令，可以直接使用：
+或使用：
 
 ```bash
 make check
 make test
 make acceptance
 ```
-
-验收范围当前覆盖 registry / CLI / pipeline 模板层，以及新的 workflow 编排层。`export_policy_bundle.py` 和 `validate_deploy_handoff.py` 当前仍是 metadata 模板入口，不计入真实策略导出或真实部署可用性；`workflow --execute` 也只会真正执行配置中 `execute: true` 的阶段，避免在本地无输入/高成本训练环境下伪造"已全跑完"。
-
-## 目录说明
-
-```text
-contracts/   跨能力域统一合同层
-adapters/    各能力域运行入口的封装说明与后续适配代码
-pipelines/   新主仓的一键流程入口模板
-registry/    动作资产、训练任务、策略产物注册表
-configs/     示例配置与 handoff 模板
-scripts/     常用状态查看与示例闭环脚本
-```
-
-## 致谢与技术参考
-
-本项目为独立工程实现，仓库结构、合同层与编排方式均按本项目目标自行设计。
-
-参考资料采用「能力域归档」方式维护：
-
-- 动作资产处理相关公开论文与开源实现
-- 技能策略训练与部署交接相关公开论文与开源实现
-- 强化学习训练与仿真基础框架相关公开论文与开源实现
-
-说明：本仓库不绑定单一外部项目名，不依赖外部项目命名体系作为对外叙事。

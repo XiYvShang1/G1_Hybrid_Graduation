@@ -1,1 +1,1 @@
-"""G1 hybrid graduation project package."""
+"""G1 hybrid project package."""

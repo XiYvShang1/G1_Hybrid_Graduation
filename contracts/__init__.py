@@ -1,4 +1,4 @@
-"""Contracts for the G1 hybrid graduation project."""
+"""Contracts for the G1 hybrid project."""
 
 from .deploy_contract import DeployContract
 from .joint_contract import JointContract, JointLimit

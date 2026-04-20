@@ -1,31 +1,37 @@
-"""Register or launch skill motion tracking training through PBHC."""
+"""Register or launch skill motion tracking training through project-local entrypoints."""
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
-from adapters.pbhc import PBHCAdapter
-from path_utils import detect_workspace_root
-from registry_manager import (
-    load_yaml_config,
-    upsert_registry_item,
-)
+from adapters.skill import SkillPolicyAdapter
+from registry_manager import load_yaml_config, upsert_registry_item
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="技能动作策略训练入口")
+    parser.add_argument("--motion-asset-id", default="example_motion_asset")
+    parser.add_argument("--task-name", default="g1_skill_motion_tracking")
+    parser.add_argument("--num-envs", type=int, default=128)
+    parser.add_argument("--experiment-name", default="hybrid_debug")
+    return parser
 
 
 def main() -> None:
+    args = _build_parser().parse_args()
     project_root = Path(__file__).resolve().parents[1]
-    workspace_root = detect_workspace_root(project_root)
-    adapter = PBHCAdapter(workspace_root / "PBHC")
+    adapter = SkillPolicyAdapter(project_root)
     plan = adapter.build_skill_policy_plan(
-        motion_asset_id="example_motion_asset",
-        task_name="g1_skill_motion_tracking",
+        motion_asset_id=args.motion_asset_id,
+        task_name=args.task_name,
+        num_envs=args.num_envs,
+        experiment_name=args.experiment_name,
     )
-    config_path = (
-        project_root / "configs" / "tasks" / "example_skill_tracking_task.yaml"
-    )
+    config_path = project_root / "configs" / "tasks" / "example_skill_tracking_task.yaml"
     payload = load_yaml_config(config_path)
     registry_path = upsert_registry_item(project_root, "tasks", payload)
-    print("Skill policy pipeline stage-2 skeleton")
+    print("Skill policy pipeline")
     for key, value in plan.items():
         print(f"{key}: {value}")
     print(f"registered_to: {registry_path}")

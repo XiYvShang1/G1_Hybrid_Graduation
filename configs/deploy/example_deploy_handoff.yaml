@@ -1,11 +1,11 @@
 deploy_contract_id: example_velocity_deploy_handoff
 policy_id: example_base_velocity_policy
-obs_layout_source: ../unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
-action_scale_source: ../unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
-default_pose_source: ../unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
-stiffness_source: ../unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
-damping_source: ../unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
-joint_map_source: ../unitree_rl_mjlab/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
+obs_layout_source: engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
+action_scale_source: engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
+default_pose_source: engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
+stiffness_source: engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
+damping_source: engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
+joint_map_source: engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/params/deploy.yaml
 command_mode: position
 damping_fallback_source: TBD
 safety_notes:

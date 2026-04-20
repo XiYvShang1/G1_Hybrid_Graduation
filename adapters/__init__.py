@@ -1,7 +1,7 @@
-"""Executable adapter skeletons for upstream repositories."""
+"""Adapter wrappers for project capability domains."""
 
-from adapters.gvhmr2pbhc.wrapper import GVHMR2PBHCAdapter
-from adapters.mjlab.wrapper import MJLabAdapter
-from adapters.pbhc.wrapper import PBHCAdapter
+from adapters.base.wrapper import BasePolicyAdapter
+from adapters.motion.wrapper import MotionAssetAdapter
+from adapters.skill.wrapper import SkillPolicyAdapter
 
-__all__ = ["GVHMR2PBHCAdapter", "MJLabAdapter", "PBHCAdapter"]
+__all__ = ["MotionAssetAdapter", "BasePolicyAdapter", "SkillPolicyAdapter"]

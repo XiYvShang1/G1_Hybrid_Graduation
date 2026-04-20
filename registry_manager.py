@@ -1,4 +1,4 @@
-"""Registry loading and summary helpers for the hybrid graduation project."""
+"""Registry loading and summary helpers for the G1 hybrid project."""
 
 from __future__ import annotations
 
@@ -149,7 +149,7 @@ def reset_registry_to_examples(project_root: Path) -> list[Path]:
 
 def format_registry_status(bundle: RegistryBundle) -> str:
     lines = [
-        "G1 混合毕设项目状态概览",
+        "G1 混合动作策略项目状态概览",
         "=" * 24,
         f"动作资产数量: {len(bundle.motions)}",
         f"训练任务数量: {len(bundle.tasks)}",
@@ -249,7 +249,7 @@ def format_path_checks(checks: list[dict[str, str]]) -> str:
 
 def build_closure_report(bundle: RegistryBundle) -> str:
     lines = [
-        "G1 混合毕设项目最小闭环报告",
+        "G1 混合动作策略项目最小闭环报告",
         "=" * 28,
         "闭环主线:",
         "1. 动作资产：动作源输入 -> 标准化 motion asset",

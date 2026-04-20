@@ -1,4 +1,4 @@
-"""Unified CLI entrypoint for the G1 hybrid graduation project."""
+"""Unified CLI entrypoint for the G1 hybrid project."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from workflow_runner import WorkflowRunner
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="G1 混合毕设项目统一入口")
+    parser = argparse.ArgumentParser(description="G1 混合动作策略项目统一入口")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     status_parser = subparsers.add_parser("status", help="显示当前 registry 状态")
