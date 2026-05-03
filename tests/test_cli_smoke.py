@@ -23,7 +23,9 @@ class CLISmokeTest(unittest.TestCase):
         )
         if completed.returncode != 0:
             raise AssertionError(
-                f"命令失败: {' '.join(args)}\n退出码: {completed.returncode}\n输出:\n{completed.stdout}"
+                f"command failed: {' '.join(args)}\n"
+                f"exit code: {completed.returncode}\n"
+                f"output:\n{completed.stdout}"
             )
         return completed.stdout
 
@@ -35,6 +37,22 @@ class CLISmokeTest(unittest.TestCase):
     def test_show_closure_command(self) -> None:
         output = self._run("show-closure")
         self.assertIn("最小闭环报告", output)
+
+    def test_training_shortcuts_dry_run(self) -> None:
+        velocity = self._run("train-velocity", "--dry-run")
+        tracking = self._run("train-tracking", "--dry-run")
+
+        self.assertIn("Unitree-G1-23Dof-Flat", velocity)
+        self.assertIn("Unitree-G1-23Dof-Tracking", tracking)
+        self.assertIn("example_motion.npz", tracking)
+
+    def test_sim_shortcuts_dry_run(self) -> None:
+        build = self._run("build-sim", "--dry-run")
+        stack = self._run("sim-stack", "--dry-run")
+
+        self.assertIn("cmake -S simulate", build)
+        self.assertIn("unitree_mujoco", stack)
+        self.assertIn("g1_ctrl", stack)
 
 
 if __name__ == "__main__":

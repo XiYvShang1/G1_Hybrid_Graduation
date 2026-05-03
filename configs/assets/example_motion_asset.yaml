@@ -1,14 +1,14 @@
 asset_id: example_motion_asset
 source_repo: motion_domain
-source_path: engines/skill_tracking/example/motion_data/Horse-stance_pose.pkl
-artifact_path: runtime/example_motion/example_motion.pkl
-artifact_format: pkl
+source_path: engines/base_locomotion/src/assets/motions/g1_23dof/jilejingtu.npz
+artifact_path: runtime/example_motion/example_motion.npz
+artifact_format: npz
 expected_fields:
-  - dof
-  - root_rot
-  - root_trans_offset
-  - pose_aa
+  - joint_pos
+  - joint_vel
+  - body_pos_w
+  - body_quat_w
   - fps
 joint_contract_id: g1_23dof_project_contract
 consumer_pipeline: skill_motion_tracking_pipeline
-notes: Template motion asset for the project-local motion pipeline.
+notes: G1 23DoF motion asset for the local mjlab tracking pipeline.

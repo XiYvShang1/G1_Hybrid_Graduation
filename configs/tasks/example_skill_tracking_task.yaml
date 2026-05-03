@@ -1,7 +1,8 @@
 task_id: g1_skill_motion_tracking
 task_type: skill_motion_tracking
 source_repo: skill_domain
-upstream_entry: engines/skill_tracking/humanoidverse/train_agent.py
+upstream_entry: engines/base_locomotion/scripts/train.py
+upstream_task_id: Unitree-G1-23Dof-Tracking
 required_motion_asset_id: example_motion_asset
 expected_outputs:
   - skill policy artifact

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import subprocess
 import sys
 import os
+import shlex
 from typing import Any
 
 from adapters.base import BasePolicyAdapter
@@ -101,8 +102,37 @@ class WorkflowRunner:
     ) -> str:
         configured = stage_cfg.get("python_executable")
         if configured:
+            if str(configured).startswith("/"):
+                return str(configured)
             return str(resolve_workspace_path(self.project_root, str(configured)))
         return self._python_executable(workflow_cfg)
+
+    @staticmethod
+    def _windows_path_to_wsl(raw_path: str) -> str:
+        windows_path = PureWindowsPath(raw_path)
+        if not windows_path.drive:
+            return raw_path
+        drive = windows_path.drive.rstrip(":").lower()
+        parts = [part for part in windows_path.parts[1:] if part not in {"\\", "/"}]
+        return "/mnt/" + drive + "/" + "/".join(parts)
+
+    def _stage_command(
+        self, python_executable: str, cwd: Path, args: list[str]
+    ) -> list[str]:
+        if os.name == "nt" and python_executable.startswith("/"):
+            wsl_args = [
+                self._windows_path_to_wsl(arg)
+                if PureWindowsPath(arg).drive
+                else arg
+                for arg in [python_executable, *args]
+            ]
+            wsl_cwd = self._windows_path_to_wsl(str(cwd))
+            shell_command = (
+                f"cd {shlex.quote(wsl_cwd)} && "
+                + " ".join(shlex.quote(arg) for arg in wsl_args)
+            )
+            return ["wsl.exe", "bash", "-lc", shell_command]
+        return [python_executable, *args]
 
     def _motion_output_path(self, motion_cfg: dict[str, Any]) -> Path:
         if "output_file" in motion_cfg:
@@ -138,27 +168,31 @@ class WorkflowRunner:
         motion_cfg = workflow_cfg.get("motion", {})
         motion_python = self._stage_python_executable(workflow_cfg, motion_cfg)
         motion_output = self._motion_output_path(motion_cfg)
+        motion_source_key = "source_file" if "source_file" in motion_cfg else "source_pkl"
         motion_source = resolve_workspace_path(
-            self.project_root, str(motion_cfg["source_pkl"])
+            self.project_root, str(motion_cfg[motion_source_key])
         )
         if "motion" in selected and motion_cfg.get("enabled", True):
             stages.append(
                 StagePlan(
                     name="motion",
-                    command=[
+                    command=self._stage_command(
                         motion_python,
-                        str(self.motion.processor_script),
-                        str(motion_source),
-                        "--output",
-                        str(motion_output),
-                        "--fix-part",
-                        str(motion_cfg.get("fix_part", "lower")),
-                        "--split-index",
-                        str(int(motion_cfg.get("split_index", 12))),
-                    ],
+                        self.project_root,
+                        [
+                            str(self.motion.processor_script),
+                            str(motion_source),
+                            "--output",
+                            str(motion_output),
+                            "--fix-part",
+                            str(motion_cfg.get("fix_part", "lower")),
+                            "--split-index",
+                            str(int(motion_cfg.get("split_index", 12))),
+                        ],
+                    ),
                     cwd=self.project_root,
                     execute_enabled=bool(motion_cfg.get("execute", True)),
-                    note="执行动作资产处理脚本生成稳定化 motion pkl",
+                    note="执行动作资产处理脚本生成项目 runtime motion asset",
                     expected_output=motion_output,
                 )
             )
@@ -172,12 +206,15 @@ class WorkflowRunner:
             stages.append(
                 StagePlan(
                     name="base",
-                    command=[
+                    command=self._stage_command(
                         base_python,
-                        str(self.base.train_entry),
-                        task_id,
-                        f"--env.scene.num-envs={num_envs}",
-                    ],
+                        self.base.engine_root,
+                        [
+                            str(self.base.train_entry),
+                            task_id,
+                            f"--env.scene.num-envs={num_envs}",
+                        ],
+                    ),
                     cwd=self.base.engine_root,
                     execute_enabled=bool(base_cfg.get("execute", False)),
                     note="执行基础策略训练入口命令",
@@ -230,29 +267,25 @@ class WorkflowRunner:
                     )
                 )
             else:
+                task_id = str(skill_cfg.get("task_id", "Unitree-G1-23Dof-Tracking"))
                 stages.append(
                     StagePlan(
                         name="skill",
-                        command=[
+                        command=self._stage_command(
                             skill_python,
-                            str(self.skill.train_entry),
-                            "+simulator=isaacgym",
-                            "+exp=motion_tracking",
-                            "+terrain=terrain_locomotion_plane",
-                            f"project_name={skill_cfg.get('project_name', 'MotionTracking')}",
-                            f"num_envs={int(skill_cfg.get('num_envs', 128))}",
-                            f"+obs={skill_cfg.get('obs', 'motion_tracking/benchmark')}",
-                            f"+robot={skill_cfg.get('robot', 'g1/g1_23dof_lock_wrist')}",
-                            f"+domain_rand={skill_cfg.get('domain_rand', 'dr_nil')}",
-                            f"+rewards={skill_cfg.get('rewards', 'motion_tracking/main')}",
-                            f"experiment_name={skill_cfg.get('experiment_name', 'hybrid_debug')}",
-                            f"robot.motion.motion_file={motion_file}",
-                            f"seed={int(skill_cfg.get('seed', 1))}",
-                            f"+device={skill_cfg.get('device', 'cuda:0')}",
-                        ],
+                            self.skill.engine_root,
+                            [
+                                str(self.skill.train_entry),
+                                task_id,
+                                "--motion-file",
+                                str(motion_file),
+                                f"--env.scene.num-envs={int(skill_cfg.get('num_envs', 128))}",
+                                f"--agent.experiment-name={skill_cfg.get('experiment_name', 'hybrid_debug')}",
+                            ],
+                        ),
                         cwd=self.skill.engine_root,
                         execute_enabled=bool(skill_cfg.get("execute", False)),
-                        note=f"执行技能策略训练入口命令 | motion_file={motion_file}",
+                        note=f"执行 mjlab 动作跟踪训练入口 | task_id={task_id} | motion_file={motion_file}",
                         expected_output=None,
                         precheck_command=None,
                     )

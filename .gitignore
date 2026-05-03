@@ -33,9 +33,16 @@ Thumbs.db
 runtime/orchestration/*.log
 runtime/orchestration/last_run_report.txt
 runtime/example_motion/example_motion.pkl
+runtime/example_motion/example_motion.npz
 
 # Training engine outputs
 engines/base_locomotion/logs/
+engines/base_locomotion/wandb/
+engines/base_locomotion/simulate/build/
+engines/base_locomotion/deploy/robots/*/build/
+engines/base_locomotion/deploy/robots/*/build*/
+engines/base_locomotion/**/*.Zone.Identifier
+engines/base_locomotion/**/*Zone.Identifier
 engines/skill_tracking/logs/
 engines/skill_tracking/outputs/
 engines/skill_tracking/wandb/

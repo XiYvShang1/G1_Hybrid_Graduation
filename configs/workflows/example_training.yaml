@@ -2,9 +2,9 @@ python_executable: auto
 motion:
   enabled: true
   execute: true
-  source_pkl: engines/skill_tracking/example/motion_data/Horse-stance_pose.pkl
+  source_file: engines/base_locomotion/src/assets/motions/g1_23dof/jilejingtu.npz
   output_dir: runtime/example_motion
-  output_file: runtime/example_motion/example_motion.pkl
+  output_file: runtime/example_motion/example_motion.npz
   fix_part: lower
   split_index: 12
 base:
@@ -16,12 +16,11 @@ base:
 skill:
   enabled: true
   execute: false
-  python_executable: /home/xiyv/miniconda3/envs/unitree-rl/bin/python
+  python_executable: /home/xiyv/miniconda3/envs/unitree_rl_mjlab/bin/python
   mode: train
   motion_file_mode: from_motion_stage
   motion_asset_id: example_motion_asset
-  task_name: g1_skill_motion_tracking
-  project_name: MotionTracking
+  task_id: Unitree-G1-23Dof-Tracking
+  task_name: Unitree-G1-23Dof-Tracking
   num_envs: 128
   experiment_name: hybrid_debug
-  device: cuda:0

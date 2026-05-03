@@ -1,0 +1,25 @@
+name: g1-23dof
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python=3.11
+  - pip
+  - cmake>=3.16
+  - make
+  - ninja
+  - gcc_linux-64
+  - gxx_linux-64
+  - eigen
+  - boost-cpp
+  - yaml-cpp
+  - zlib
+  - numpy=1.24.4
+  - scipy
+  - pytorch
+  - pytorch-cuda=12.1
+  - pip:
+      - -r requirements.txt
+      - -r requirements-dev.txt
+      - -r requirements-algorithms.txt
