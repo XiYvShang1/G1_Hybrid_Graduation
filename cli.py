@@ -1,33 +1,23 @@
-"""Unified CLI entrypoint for the G1 23DoF project."""
+"""Unified CLI for the G1 23DoF training and simulation project."""
 
 from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import shlex
 import subprocess
-import sys
 from pathlib import Path, PureWindowsPath
-
-from registry_manager import (
-    build_closure_report,
-    collect_path_checks,
-    format_path_checks,
-    format_registry_status,
-    load_registry_bundle,
-    load_yaml_config,
-    reset_registry_to_examples,
-    upsert_registry_item,
-)
-from workflow_runner import WorkflowRunner
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 ENGINE_ROOT = PROJECT_ROOT / "engines" / "base_locomotion"
+
 DEFAULT_WSL_PYTHON = "/home/xiyv/miniconda3/envs/unitree_rl_mjlab/bin/python"
 DEFAULT_VELOCITY_TASK = "Unitree-G1-23Dof-Flat"
 DEFAULT_TRACKING_TASK = "Unitree-G1-23Dof-Tracking"
-DEFAULT_MOTION_FILE = PROJECT_ROOT / "runtime" / "example_motion" / "example_motion.npz"
+DEFAULT_SOURCE_MOTION = ENGINE_ROOT / "src" / "assets" / "motions" / "g1_23dof" / "jilejingtu.npz"
+DEFAULT_RUNTIME_MOTION = PROJECT_ROOT / "runtime" / "example_motion" / "example_motion.npz"
 
 
 def _windows_path_to_wsl(raw_path: str) -> str:
@@ -88,48 +78,21 @@ def _latest_onnx(log_root: Path) -> Path:
 
 
 def _add_common_runtime_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--python", default=DEFAULT_WSL_PYTHON, help="Python executable for mjlab training/play.")
-    parser.add_argument("--dry-run", action="store_true", help="Print the command without executing it.")
+    parser.add_argument("--python", default=DEFAULT_WSL_PYTHON, help="Python executable for mjlab train/play.")
+    parser.add_argument("--dry-run", action="store_true", help="Print the generated command without running it.")
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="G1 23DoF training, simulation, and registry CLI")
+    parser = argparse.ArgumentParser(description="G1 23DoF training, playback, and simulation CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    status_parser = subparsers.add_parser("status", help="Show registry status.")
-    status_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    subparsers.add_parser("status", help="Show the simplified project status.")
+    subparsers.add_parser("check-paths", help="Check the main G1 23DoF paths.")
 
-    check_parser = subparsers.add_parser("check-paths", help="Check registered local paths.")
-    check_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-
-    closure_parser = subparsers.add_parser("show-closure", help="Show the current project closure report.")
-    closure_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-
-    add_motion_parser = subparsers.add_parser("add-motion", help="Register a motion asset YAML.")
-    add_motion_parser.add_argument("--config", type=Path, required=True)
-    add_motion_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-
-    add_task_parser = subparsers.add_parser("add-task", help="Register a training task YAML.")
-    add_task_parser.add_argument("--config", type=Path, required=True)
-    add_task_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-
-    add_policy_parser = subparsers.add_parser("add-policy", help="Register a policy artifact YAML.")
-    add_policy_parser.add_argument("--config", type=Path, required=True)
-    add_policy_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-
-    reset_parser = subparsers.add_parser("reset-example-registry", help="Reset registry to example entries.")
-    reset_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
-
-    workflow_parser = subparsers.add_parser("workflow", help="Run the motion/base/skill workflow.")
-    workflow_parser.add_argument("--config", type=Path, required=True)
-    workflow_parser.add_argument("--execute", action="store_true")
-    workflow_parser.add_argument(
-        "--stages",
-        nargs="*",
-        default=["motion", "base", "skill"],
-        choices=["motion", "base", "skill"],
-    )
-    workflow_parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
+    prepare_motion = subparsers.add_parser("prepare-motion", help="Copy the default motion asset to runtime.")
+    prepare_motion.add_argument("--source", type=Path, default=DEFAULT_SOURCE_MOTION)
+    prepare_motion.add_argument("--output", type=Path, default=DEFAULT_RUNTIME_MOTION)
+    prepare_motion.add_argument("--dry-run", action="store_true")
 
     train_velocity = subparsers.add_parser("train-velocity", help="Train the G1 23DoF velocity policy.")
     _add_common_runtime_args(train_velocity)
@@ -140,7 +103,7 @@ def _build_parser() -> argparse.ArgumentParser:
     train_tracking = subparsers.add_parser("train-tracking", help="Train the G1 23DoF motion-tracking policy.")
     _add_common_runtime_args(train_tracking)
     train_tracking.add_argument("--task", default=DEFAULT_TRACKING_TASK)
-    train_tracking.add_argument("--motion-file", type=Path, default=DEFAULT_MOTION_FILE)
+    train_tracking.add_argument("--motion-file", type=Path, default=DEFAULT_RUNTIME_MOTION)
     train_tracking.add_argument("--num-envs", type=int, default=4096)
     train_tracking.add_argument("--gpu-ids", nargs="*", type=int)
 
@@ -154,7 +117,7 @@ def _build_parser() -> argparse.ArgumentParser:
     play_tracking = subparsers.add_parser("play-tracking", help="Play a trained motion-tracking checkpoint.")
     _add_common_runtime_args(play_tracking)
     play_tracking.add_argument("--task", default=DEFAULT_TRACKING_TASK)
-    play_tracking.add_argument("--motion-file", type=Path, default=DEFAULT_MOTION_FILE)
+    play_tracking.add_argument("--motion-file", type=Path, default=DEFAULT_RUNTIME_MOTION)
     play_tracking.add_argument("--checkpoint", type=Path)
     play_tracking.add_argument("--num-envs", type=int, default=1)
     play_tracking.add_argument("--agent", choices=["trained", "zero", "random"], default="trained")
@@ -182,6 +145,49 @@ def _build_parser() -> argparse.ArgumentParser:
     sim_stack.add_argument("--dry-run", action="store_true")
 
     return parser
+
+
+def _format_exists(path: Path) -> str:
+    return f"[{'yes' if path.exists() else 'no '}] {path}"
+
+
+def _handle_status() -> None:
+    print("G1 23DoF 项目状态")
+    print("=" * 18)
+    print(f"项目根目录: {PROJECT_ROOT}")
+    print(f"训练引擎: {_format_exists(ENGINE_ROOT)}")
+    print(f"速度跟踪任务: {DEFAULT_VELOCITY_TASK}")
+    print(f"动作跟踪任务: {DEFAULT_TRACKING_TASK}")
+    print(f"默认源动作: {_format_exists(DEFAULT_SOURCE_MOTION)}")
+    print(f"运行时动作: {_format_exists(DEFAULT_RUNTIME_MOTION)}")
+
+
+def _handle_check_paths() -> None:
+    paths = [
+        ENGINE_ROOT / "scripts" / "train.py",
+        ENGINE_ROOT / "scripts" / "play.py",
+        ENGINE_ROOT / "scripts" / "play_onnx.py",
+        DEFAULT_SOURCE_MOTION,
+        DEFAULT_RUNTIME_MOTION,
+        ENGINE_ROOT / "deploy" / "robots" / "g1_23dof" / "CMakeLists.txt",
+        ENGINE_ROOT / "simulate" / "CMakeLists.txt",
+    ]
+    for path in paths:
+        print(_format_exists(path))
+
+
+def _handle_prepare_motion(args: argparse.Namespace) -> int:
+    source = args.source.resolve()
+    output = args.output.resolve()
+    if args.dry_run:
+        print(f"copy {source} -> {output}")
+        return 0
+    if not source.exists():
+        raise FileNotFoundError(f"motion source not found: {source}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, output)
+    print(f"prepared motion: {output}")
+    return 0
 
 
 def _train_command(args: argparse.Namespace, *, tracking: bool) -> list[object]:
@@ -256,9 +262,7 @@ def _handle_sim(args: argparse.Namespace) -> int:
             dry_run=args.dry_run,
         )
     if args.command == "sim-stack":
-        sim_cmd = _build_process_command(
-            ENGINE_ROOT, ["/bin/bash", "-lc", "./simulate/build/unitree_mujoco"]
-        )
+        sim_cmd = _build_process_command(ENGINE_ROOT, ["/bin/bash", "-lc", "./simulate/build/unitree_mujoco"])
         ctrl_cmd = _build_process_command(
             ENGINE_ROOT,
             ["/bin/bash", "-lc", f"./deploy/robots/g1_23dof/build/g1_ctrl --network={shlex.quote(args.network)}"],
@@ -284,6 +288,15 @@ def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 
+    if args.command == "status":
+        _handle_status()
+        return
+    if args.command == "check-paths":
+        _handle_check_paths()
+        return
+    if args.command == "prepare-motion":
+        raise SystemExit(_handle_prepare_motion(args))
+
     runtime_result = _handle_training_or_play(args)
     if runtime_result >= 0:
         raise SystemExit(runtime_result)
@@ -291,61 +304,6 @@ def main() -> None:
     sim_result = _handle_sim(args)
     if sim_result >= 0:
         raise SystemExit(sim_result)
-
-    if args.command == "status":
-        bundle = load_registry_bundle(args.project_root)
-        print(format_registry_status(bundle))
-        return
-
-    if args.command == "check-paths":
-        bundle = load_registry_bundle(args.project_root)
-        checks = collect_path_checks(args.project_root, bundle)
-        print(format_path_checks(checks))
-        return
-
-    if args.command == "show-closure":
-        bundle = load_registry_bundle(args.project_root)
-        print(build_closure_report(bundle))
-        return
-
-    if args.command == "add-motion":
-        payload = load_yaml_config(args.config)
-        registry_path = upsert_registry_item(args.project_root, "motions", payload)
-        print(f"registered motion asset to: {registry_path}")
-        print(f"asset_id: {payload.get('asset_id', 'unknown')}")
-        return
-
-    if args.command == "add-task":
-        payload = load_yaml_config(args.config)
-        registry_path = upsert_registry_item(args.project_root, "tasks", payload)
-        print(f"registered training task to: {registry_path}")
-        print(f"task_id: {payload.get('task_id', 'unknown')}")
-        return
-
-    if args.command == "add-policy":
-        payload = load_yaml_config(args.config)
-        registry_path = upsert_registry_item(args.project_root, "policies", payload)
-        print(f"registered policy artifact to: {registry_path}")
-        print(f"policy_id: {payload.get('policy_id', 'unknown')}")
-        return
-
-    if args.command == "reset-example-registry":
-        updated_files = reset_registry_to_examples(args.project_root)
-        print("reset registry example configs:")
-        for file_path in updated_files:
-            print(f"- {file_path}")
-        return
-
-    if args.command == "workflow":
-        runner = WorkflowRunner(args.project_root)
-        workflow_cfg = runner.load_workflow(args.config)
-        results = runner.run(
-            workflow_cfg=workflow_cfg,
-            execute=bool(args.execute),
-            selected_stages=set(args.stages),
-        )
-        print(runner.format_results(results))
-        return
 
     parser.error(f"unknown command: {args.command}")
 

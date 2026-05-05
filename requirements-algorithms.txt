@@ -2,8 +2,6 @@
 mjlab==1.2.0
 tyro
 torchrunx
-
-# Skill tracking engine
 hydra-core>=1.2.0
 omegaconf
 torch

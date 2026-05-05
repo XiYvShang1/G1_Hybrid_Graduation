@@ -32,4 +32,4 @@ jobs:
 
       - name: Unit tests
         run: |
-          python -m unittest tests.test_registry_manager tests.test_cli_smoke
+          python -m unittest tests.test_cli_smoke

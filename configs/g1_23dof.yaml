@@ -1,0 +1,17 @@
+# G1 23DoF project defaults.
+
+robot:
+  name: Unitree G1
+  dof: 23
+
+tasks:
+  velocity: Unitree-G1-23Dof-Flat
+  tracking: Unitree-G1-23Dof-Tracking
+
+motion:
+  source: engines/base_locomotion/src/assets/motions/g1_23dof/jilejingtu.npz
+  runtime: runtime/example_motion/example_motion.npz
+
+simulation:
+  controller: engines/base_locomotion/deploy/robots/g1_23dof
+  simulator: engines/base_locomotion/simulate

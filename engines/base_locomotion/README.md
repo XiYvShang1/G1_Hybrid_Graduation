@@ -24,5 +24,4 @@ python scripts/play.py Unitree-G1-23Dof-Tracking --motion-file src/assets/motion
 ```
 
 The top-level repository scopes this engine to the G1 23DoF graduation project.
-Other robot/task variants may exist in the engine tree, but they are not part of
-the default project workflow.
+Only the G1 23DoF task and controller paths are kept in the default project tree.

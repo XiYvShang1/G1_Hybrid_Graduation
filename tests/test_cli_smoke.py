@@ -31,12 +31,19 @@ class CLISmokeTest(unittest.TestCase):
 
     def test_status_command(self) -> None:
         output = self._run("status")
-        self.assertIn("项目状态概览", output)
-        self.assertIn("动作资产数量", output)
+        self.assertIn("G1 23DoF 项目状态", output)
+        self.assertIn("速度跟踪任务", output)
+        self.assertIn("动作跟踪任务", output)
 
-    def test_show_closure_command(self) -> None:
-        output = self._run("show-closure")
-        self.assertIn("最小闭环报告", output)
+    def test_check_paths_command(self) -> None:
+        output = self._run("check-paths")
+        self.assertIn("scripts", output)
+        self.assertIn("g1_23dof", output)
+
+    def test_prepare_motion_dry_run(self) -> None:
+        output = self._run("prepare-motion", "--dry-run")
+        self.assertIn("copy", output)
+        self.assertIn("example_motion.npz", output)
 
     def test_training_shortcuts_dry_run(self) -> None:
         velocity = self._run("train-velocity", "--dry-run")

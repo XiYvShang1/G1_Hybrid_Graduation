@@ -43,6 +43,3 @@ engines/base_locomotion/deploy/robots/*/build/
 engines/base_locomotion/deploy/robots/*/build*/
 engines/base_locomotion/**/*.Zone.Identifier
 engines/base_locomotion/**/*Zone.Identifier
-engines/skill_tracking/logs/
-engines/skill_tracking/outputs/
-engines/skill_tracking/wandb/
