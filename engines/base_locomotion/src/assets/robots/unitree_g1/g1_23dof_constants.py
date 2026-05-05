@@ -1,4 +1,11 @@
-"""Unitree G1_23DOF constants."""
+"""Unitree G1 23DoF 机器人模型、执行器和动作缩放配置。
+
+训练环境不会直接手写 23 个关节，而是通过这里的 EntityCfg 构造机器人。
+这个文件主要回答三个问题：
+- MuJoCo 模型在哪里；
+- 每类关节用什么执行器参数；
+- 策略输出的动作应该按什么比例缩放到关节位置目标。
+"""
 
 from pathlib import Path
 
@@ -25,12 +32,14 @@ assert G1_23DOF_XML.exists()
 
 
 def get_assets(meshdir: str) -> dict[str, bytes]:
+  """读取 MJCF 依赖的 mesh 资源，交给 MuJoCo 编译器使用。"""
   assets: dict[str, bytes] = {}
   update_assets(assets, G1_23DOF_XML.parent / "assets", meshdir)
   return assets
 
 
 def get_spec() -> mujoco.MjSpec:
+  """从 g1_23dof.xml 创建 MuJoCo MjSpec，并注入 mesh 资源。"""
   spec = mujoco.MjSpec.from_file(str(G1_23DOF_XML))
   spec.assets = get_assets(spec.meshdir)
   return spec
@@ -40,7 +49,8 @@ def get_spec() -> mujoco.MjSpec:
 # Actuator config.
 ##
 
-# Motor specs (from Unitree).
+# 电机规格来自 Unitree。下面先按不同电机型号计算等效转子惯量，
+# 后面再把这些参数映射到具体关节。
 ROTOR_INERTIAS_5020 = (
   0.139e-4,
   0.017e-4,
@@ -118,6 +128,7 @@ ACTUATOR_4010 = ElectricActuator(
   effort_limit=5.0,
 )
 
+# PD 控制器目标自然频率。这里用 10Hz 作为默认刚度/阻尼计算基准。
 NATURAL_FREQ = 10 * 2.0 * 3.1415926535  # 10Hz
 DAMPING_RATIO = 2.0
 
@@ -144,6 +155,7 @@ G1_ACTUATOR_5020 = BuiltinPositionActuatorCfg(
   effort_limit=ACTUATOR_5020.effort_limit,
   armature=ACTUATOR_5020.reflected_inertia,
 )
+# 大腿 pitch/yaw 和腰 yaw 使用 7520-14 类电机。
 G1_ACTUATOR_7520_14 = BuiltinPositionActuatorCfg(
   target_names_expr=(".*_hip_pitch_joint", ".*_hip_yaw_joint", "waist_yaw_joint"),
   stiffness=STIFFNESS_7520_14,
@@ -151,6 +163,7 @@ G1_ACTUATOR_7520_14 = BuiltinPositionActuatorCfg(
   effort_limit=ACTUATOR_7520_14.effort_limit,
   armature=ACTUATOR_7520_14.reflected_inertia,
 )
+# 髋 roll 和膝关节负载更大，使用 7520-22 类电机。
 G1_ACTUATOR_7520_22 = BuiltinPositionActuatorCfg(
   target_names_expr=(".*_hip_roll_joint", ".*_knee_joint"),
   stiffness=STIFFNESS_7520_22,
@@ -159,11 +172,8 @@ G1_ACTUATOR_7520_22 = BuiltinPositionActuatorCfg(
   armature=ACTUATOR_7520_22.reflected_inertia,
 )
 
-# Ankles are 4-bar linkages with 2 5020 actuators.
-# Due to the parallel linkage, the effective armature at the ankle and waist joints
-# is configuration dependent. Since the exact geometry of the linkage is unknown, we
-# assume a nominal 1:1 gear ratio. Under this assumption, the joint armature in the
-# nominal configuration is approximated as the sum of the 2 actuators' armatures.
+# 踝关节是四连杆结构，由两个 5020 电机共同作用。
+# 精确等效惯量会随机构姿态变化，这里用简化近似：两个电机惯量相加。
 G1_ACTUATOR_ANKLE = BuiltinPositionActuatorCfg(
   target_names_expr=(".*_ankle_pitch_joint", ".*_ankle_roll_joint"),
   stiffness=STIFFNESS_5020 * 2,
@@ -190,6 +200,7 @@ HOME_KEYFRAME = EntityCfg.InitialStateCfg(
   joint_vel={".*": 0.0},
 )
 
+# 一个膝盖更弯的初始姿态，可用于需要更低重心的配置或调试。
 KNEES_BENT_KEYFRAME = EntityCfg.InitialStateCfg(
   pos=(0, 0, 0.78),
   joint_pos={
@@ -209,9 +220,8 @@ KNEES_BENT_KEYFRAME = EntityCfg.InitialStateCfg(
 # Collision config.
 ##
 
-# This enables all collisions, including self collisions.
-# Self-collisions are given condim=1 while foot collisions
-# are given condim=3.
+# 完整碰撞配置：包含自碰撞和脚底碰撞。
+# 脚底用 condim=3 以支持摩擦接触；其他自碰撞用更简单的接触维度。
 FULL_COLLISION = CollisionCfg(
   geom_names_expr=(".*_collision",),
   condim={r"^(left|right)_foot[1-7]_collision$": 3, ".*_collision": 1},
@@ -228,8 +238,7 @@ FULL_COLLISION_WITHOUT_SELF = CollisionCfg(
   friction={r"^(left|right)_foot[1-7]_collision$": (0.6,)},
 )
 
-# This disables all collisions except the feet.
-# Feet get condim=3, all other geoms are disabled.
+# 只保留脚底碰撞的配置，适合某些只关注落脚接触的调试场景。
 FEET_ONLY_COLLISION = CollisionCfg(
   geom_names_expr=(r"^(left|right)_foot[1-7]_collision$",),
   contype=0,
@@ -255,10 +264,10 @@ G1_23DOF_ARTICULATION = EntityArticulationInfoCfg(
 
 
 def get_g1_23dof_robot_cfg() -> EntityCfg:
-  """Get a fresh G1_23DOF robot configuration instance.
+  """创建一个新的 G1 23DoF 机器人配置对象。
 
-  Returns a new EntityCfg instance each time to avoid mutation issues when
-  the config is shared across multiple places.
+  每次都返回新对象，避免多个环境/任务共享同一个配置对象时互相修改。
+  速度跟踪和动作跟踪环境都会调用这个函数把机器人加入场景。
   """
   return EntityCfg(
     init_state=HOME_KEYFRAME,
@@ -269,6 +278,8 @@ def get_g1_23dof_robot_cfg() -> EntityCfg:
 
 
 G1_23DOF_ACTION_SCALE: dict[str, float] = {}
+# 根据每类关节的 effort_limit 和 stiffness 自动生成动作缩放。
+# 策略输出通常是 [-1, 1] 附近的归一化动作，这个表决定每个关节实际能偏移多少。
 for a in G1_23DOF_ARTICULATION.actuators:
   assert isinstance(a, BuiltinPositionActuatorCfg)
   e = a.effort_limit
@@ -280,6 +291,7 @@ for a in G1_23DOF_ARTICULATION.actuators:
 
 
 if __name__ == "__main__":
+  # 直接运行本文件时，打开 MuJoCo viewer 检查机器人模型是否能成功编译。
   import mujoco.viewer as viewer
 
   from mjlab.entity.entity import Entity

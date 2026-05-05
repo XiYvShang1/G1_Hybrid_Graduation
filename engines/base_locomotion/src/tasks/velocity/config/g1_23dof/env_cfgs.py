@@ -1,4 +1,8 @@
-"""Unitree G1-23DOF velocity environment configurations."""
+"""Unitree G1 23DoF 速度跟踪环境配置。
+
+速度跟踪任务的目标是：给机器人一个期望线速度/角速度，让策略输出 23 个
+关节的位置控制目标，使机器人稳定跟随速度指令行走。
+"""
 
 from src.assets.robots import (
   G1_23DOF_ACTION_SCALE,
@@ -16,13 +20,21 @@ from src.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
 
 
 def unitree_g1_23dof_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create Unitree G1-23DOF rough terrain velocity configuration."""
+  """创建 G1 23DoF 粗糙地形速度跟踪配置。
+
+  这个函数先从 mjlab 的通用速度环境模板出发，然后替换成 G1 23DoF 机器人，
+  并补充 G1 专属的传感器、接触检测、动作缩放和奖励项。
+
+  Args:
+    play: True 表示回放/演示模式，会关闭训练噪声和课程学习，方便观察策略。
+  """
   cfg = make_velocity_env_cfg()
 
   cfg.sim.mujoco.ccd_iterations = 500
   cfg.sim.contact_sensor_maxmatch = 500
   cfg.sim.nconmax = 48
 
+  # 场景里真正参与训练的实体只有一个：G1 23DoF 机器人。
   cfg.scene.entities = {"robot": get_g1_23dof_robot_cfg()}
 
   # Set raycast sensor frame to G1-23DOF pelvis.
@@ -31,11 +43,13 @@ def unitree_g1_23dof_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       assert isinstance(sensor, RayCastSensorCfg)
       sensor.frame.name = "pelvis"
 
+  # 后续奖励和观测需要知道左右脚 site，用来计算触地、打滑、抬脚高度等。
   site_names = ("left_foot", "right_foot")
   geom_names = tuple(
     f"{side}_foot{i}_collision" for side in ("left", "right") for i in range(1, 8)
   )
 
+  # 脚底触地传感器：用于步态奖励、空中时间、接触力等指标。
   feet_ground_cfg = ContactSensorCfg(
     name="feet_ground_contact",
     primary=ContactMatch(
@@ -49,6 +63,7 @@ def unitree_g1_23dof_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     num_slots=1,
     track_air_time=True,
   )
+  # 自碰撞传感器：用于惩罚身体部件之间不合理碰撞。
   self_collision_cfg = ContactSensorCfg(
     name="self_collision",
     primary=ContactMatch(mode="subtree", pattern="pelvis", entity="robot"),
@@ -66,12 +81,14 @@ def unitree_g1_23dof_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
     cfg.scene.terrain.terrain_generator.curriculum = True
 
+  # 策略输出的是关节位置目标，这里按不同关节的力矩/刚度设置动作缩放。
   joint_pos_action = cfg.actions["joint_pos"]
   assert isinstance(joint_pos_action, JointPositionActionCfg)
   joint_pos_action.scale = G1_23DOF_ACTION_SCALE
 
   cfg.viewer.body_name = "torso_link"
 
+  # twist 命令就是速度跟踪的目标速度，包括 x/y 线速度和 yaw 角速度。
   twist_cmd = cfg.commands["twist"]
   assert isinstance(twist_cmd, UniformVelocityCommandCfg)
   twist_cmd.viz.z_offset = 1.15
@@ -91,6 +108,7 @@ def unitree_g1_23dof_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # - Shoulders/elbows get moderate freedom for natural arm swing during walking.
   # - Wrists are loose (0.3) since they don't affect balance much.
   # Running values are ~1.5-2x walking values to accommodate larger motion range.
+  # 姿态奖励约束机器人不要为了追速度而扭出过分夸张的关节角。
   cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
   cfg.rewards["pose"].params["std_walking"] = {
     # Lower body.
@@ -137,7 +155,7 @@ def unitree_g1_23dof_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={"sensor_name": self_collision_cfg.name, "force_threshold": 10.0},
   )
 
-  # Apply play mode overrides.
+  # 回放模式：关闭随机扰动和地形课程，让仿真画面更稳定、可解释。
   if play:
     # Effectively infinite episode length.
     cfg.episode_length_s = int(1e9)
@@ -162,7 +180,14 @@ def unitree_g1_23dof_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
 
 def unitree_g1_23dof_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create Unitree G1-23DOF flat terrain velocity configuration."""
+  """创建 G1 23DoF 平地速度跟踪配置。
+
+  本项目默认使用这个任务 `Unitree-G1-23Dof-Flat`。它复用 rough 配置的大部分
+  机器人、奖励和动作设置，但把地形改成平地，并删除高度扫描观测。
+
+  Args:
+    play: True 表示回放/演示模式。
+  """
   cfg = unitree_g1_23dof_rough_env_cfg(play=play)
 
   cfg.sim.njmax = 300
@@ -170,12 +195,12 @@ def unitree_g1_23dof_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.sim.contact_sensor_maxmatch = 64
   cfg.sim.nconmax = None
 
-  # Switch to flat terrain.
+  # 切换到平地：不再生成随机地形。
   assert cfg.scene.terrain is not None
   cfg.scene.terrain.terrain_type = "plane"
   cfg.scene.terrain.terrain_generator = None
 
-  # Remove raycast sensor and height scan (no terrain to scan).
+  # 平地没有需要扫描的高度图，所以删掉 raycast 传感器和 height_scan 观测。
   cfg.scene.sensors = tuple(
     s for s in (cfg.scene.sensors or ()) if s.name != "terrain_scan"
   )

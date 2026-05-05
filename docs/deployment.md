@@ -1,6 +1,11 @@
 # 部署说明
 
-当前项目只保留 G1 23DoF 部署侧仿真控制器：
+当前项目保留两层部署：
+
+- 23DoF：本项目训练出来的速度跟踪 / 动作跟踪策略部署。
+- 29DoF：已有训练好策略的 MuJoCo / 真机部署演示。
+
+## 23DoF 部署
 
 ```text
 engines/base_locomotion/deploy/robots/g1_23dof
@@ -23,11 +28,34 @@ engines/base_locomotion/deploy/robots/g1_23dof/config/policy/mimic/dance1_subjec
 ## 本地仿真
 
 ```bash
-python -m cli build-sim
-python -m cli sim-stack --network lo
+python -m cli build-23dof-sim
+python -m cli sim-23dof-stack --network lo
 ```
 
-`sim-stack` 会先启动 MuJoCo 仿真器，再启动 G1 23DoF 控制器。控制器退出后，仿真器也会被关闭。
+`sim-23dof-stack` 会先启动 MuJoCo 仿真器，再启动 G1 23DoF 控制器。控制器退出后，仿真器也会被关闭。
+
+## 29DoF 部署演示
+
+29DoF 部署层位于：
+
+```text
+deployments/g1_29dof
+```
+
+它加载已有训练好的 29DoF 权重，用 FSM 完成行走、站立、阻尼保护和动作技能切换。
+
+MuJoCo 演示：
+
+```bash
+python -m cli sim-29dof-mujoco
+python -m cli sim-29dof-mujoco --xml-path g1_description/g1_29dof_LieDown.xml
+```
+
+真机入口只建议先 dry-run：
+
+```bash
+python -m cli deploy-29dof-real --dry-run
+```
 
 ## 实机提醒
 
