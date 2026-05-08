@@ -12,11 +12,10 @@ import numpy as np
 import viser
 from omegaconf import DictConfig
 
-from common.ctrlcomp import PolicyOutput, StateAndCmd
+from common.ctrlcomp import FSMCommand, PolicyOutput, StateAndCmd
 from common.path_config import PROJECT_ROOT
 from common.utils import get_gravity_orientation
 from FSM.FSM import FSM, STATE_LABELS
-from FSM.FSMState import FSMCommand
 
 
 def pd_control(target_q, q, kp, target_dq, dq, kd):
