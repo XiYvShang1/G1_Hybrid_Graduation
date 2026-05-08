@@ -18,6 +18,47 @@ from common.utils import get_gravity_orientation
 from FSM.FSM import FSM, STATE_LABELS
 
 
+STATE_GRAPH = """
+### G1 Mimic Skill 状态机
+
+```text
+            +----------------+
+            |   LOCO 平衡    |
+            +--------+-------+
+                     |
+       +-------------+-------------+
+       |       |       |     |     |
+    Dance   KungFu   Kick  ASAP  KungFu2
+       |       |       |     |     |
+       +-------+-------+-----+-----+
+                     |
+              Skill Cooldown
+                     |
+            +--------v-------+
+            |   LOCO 平衡    |
+            +----------------+
+
+安全态: Passive / 默认姿态 / StandUp 可随时切换
+```
+"""
+
+
+def geom_color(name: str | None) -> tuple[int, int, int]:
+    """按身体区域给 mesh 上色，让浏览器展示更接近 mjlab 的分组观感。"""
+    name = name or ""
+    if "torso" in name or "pelvis" in name or "waist" in name:
+        return (218, 222, 212)
+    if "left" in name and ("shoulder" in name or "elbow" in name or "wrist" in name or "hand" in name):
+        return (146, 178, 216)
+    if "right" in name and ("shoulder" in name or "elbow" in name or "wrist" in name or "hand" in name):
+        return (216, 166, 134)
+    if "hip" in name or "knee" in name or "ankle" in name:
+        return (196, 198, 188)
+    if "head" in name:
+        return (60, 64, 66)
+    return (226, 226, 218)
+
+
 def pd_control(target_q, q, kp, target_dq, dq, kd):
     """用关节位置目标和 PD 增益计算 MuJoCo actuator torque。"""
     return (target_q - q) * kp + (target_dq - dq) * kd
@@ -73,13 +114,20 @@ def mat_to_wxyz(mat: np.ndarray) -> np.ndarray:
 
 
 class ViserMujocoScene:
-    """把 MuJoCo 29DoF robot mesh 同步到 Viser 浏览器场景。"""
+    """把 MuJoCo robot mesh 同步到 Viser 浏览器场景。"""
 
     def __init__(self, model: mujoco.MjModel, data: mujoco.MjData, port: int):
         self.model = model
         self.data = data
-        self.server = viser.ViserServer(port=port, label="G1 29DoF")
+        self.server = viser.ViserServer(port=port, label="G1 Mimic Skill")
         self.server.scene.set_up_direction("+z")
+        self.server.scene.add_light_ambient("/lights/ambient", intensity=0.7)
+        self.server.scene.add_light_directional(
+            "/lights/key",
+            color=(255, 248, 230),
+            intensity=1.6,
+            position=(3.0, -4.0, 5.0),
+        )
         self.server.scene.add_grid(
             "/ground",
             width=12.0,
@@ -110,8 +158,9 @@ class ViserMujocoScene:
                 f"/robot/{geom_id:03d}_{name or 'geom'}",
                 vertices=vertices,
                 faces=faces,
-                color=(232, 232, 224),
+                color=geom_color(name),
                 flat_shading=False,
+                material="toon3",
                 side="double",
                 position=self.data.geom_xpos[geom_id],
                 wxyz=mat_to_wxyz(self.data.geom_xmat[geom_id]),
@@ -140,9 +189,9 @@ def main(cfg: DictConfig):
     num_joints = model.nu
     display_num_joints = cfg.get("display_num_joints", num_joints)
 
-    print("[系统] G1 29DoF Viser MuJoCo 演示启动中...")
-    print(f"[系统] 机器人显示关节数: {display_num_joints}")
-    print(f"[系统] MuJoCo actuator 数: {num_joints}")
+    print("[系统] G1 Mimic Skill Viser 演示启动中...")
+    print(f"[系统] 展示关节数: {display_num_joints}")
+    print(f"[系统] 底层 MuJoCo actuator 数: {num_joints}")
     print(f"[系统] 控制周期: {simulation_dt * control_decimation:.4f}s")
 
     policy_output_action = np.zeros(num_joints, dtype=np.float32)
@@ -166,10 +215,23 @@ def main(cfg: DictConfig):
     print("[模式] 已自动进入 LOCO 平衡模式。")
 
     scene = ViserMujocoScene(model, data, viser_port)
-    status = scene.server.gui.add_text("当前模式", STATE_LABELS[fsm.cur_policy.name], disabled=True)
-    speed_x = scene.server.gui.add_slider("前进速度 x", -1.0, 1.0, 0.05, 0.0)
-    speed_yaw = scene.server.gui.add_slider("转向速度 yaw", -1.0, 1.0, 0.05, 0.0)
-    running = scene.server.gui.add_checkbox("运行", True)
+    scene.server.gui.add_markdown(
+        "## G1 Mimic Skill Viewer\n"
+        "浏览器版技能策略演示层：保留原 RoboMimicDeploy_G1 的 FSM 和已训练策略，"
+        "仅替换显示层为 Viser。"
+    )
+    scene.server.gui.add_markdown(STATE_GRAPH)
+
+    with scene.server.gui.add_folder("Info"):
+        status = scene.server.gui.add_text("当前状态", STATE_LABELS[fsm.cur_policy.name], disabled=True)
+        control_hz = 1.0 / (simulation_dt * control_decimation)
+        scene.server.gui.add_text("控制频率", f"{control_hz:.1f} Hz", disabled=True)
+        scene.server.gui.add_text("显示频率", f"{render_fps:.1f} FPS", disabled=True)
+
+    with scene.server.gui.add_folder("Command"):
+        speed_x = scene.server.gui.add_slider("前进速度 x", -1.0, 1.0, 0.05, 0.0)
+        speed_yaw = scene.server.gui.add_slider("转向速度 yaw", -1.0, 1.0, 0.05, 0.0)
+        running = scene.server.gui.add_checkbox("运行", True)
 
     def bind_button(label, command):
         button = scene.server.gui.add_button(label)
@@ -178,15 +240,18 @@ def main(cfg: DictConfig):
         def _(_event):
             state_cmd.skill_cmd = command
 
-    bind_button("LOCO 行走", FSMCommand.LOCO)
-    bind_button("Dance", FSMCommand.SKILL_1)
-    bind_button("KungFu", FSMCommand.SKILL_2)
-    bind_button("Kick", FSMCommand.SKILL_3)
-    bind_button("ASAP", FSMCommand.SKILL_5)
-    bind_button("KungFu2", FSMCommand.SKILL_4)
-    bind_button("StandUp", FSMCommand.STAND_UP)
-    bind_button("Passive 阻尼", FSMCommand.PASSIVE)
-    bind_button("默认姿态", FSMCommand.POS_RESET)
+    with scene.server.gui.add_folder("Mimic Skill"):
+        bind_button("LOCO 平衡", FSMCommand.LOCO)
+        bind_button("Dance", FSMCommand.SKILL_1)
+        bind_button("KungFu", FSMCommand.SKILL_2)
+        bind_button("Kick", FSMCommand.SKILL_3)
+        bind_button("ASAP", FSMCommand.SKILL_5)
+        bind_button("KungFu2", FSMCommand.SKILL_4)
+
+    with scene.server.gui.add_folder("Safety"):
+        bind_button("StandUp", FSMCommand.STAND_UP)
+        bind_button("Passive 阻尼", FSMCommand.PASSIVE)
+        bind_button("默认姿态", FSMCommand.POS_RESET)
 
     render_dt = 1.0 / max(render_fps, 1.0)
     next_render = time.time()
