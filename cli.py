@@ -759,12 +759,16 @@ def main() -> None:
     """CLI 主函数：解析参数，并按命令类型调用对应处理函数。"""
     parser = _build_parser()
     args, passthrough_args = parser.parse_known_args()
-    if passthrough_args and args.command not in {"train-velocity", "train-tracking"}:
+    passthrough_commands = {"train-velocity", "train-tracking", "sim-29dof-mujoco"}
+    if passthrough_args and args.command not in passthrough_commands:
         parser.error(
-            "unknown arguments are only passed through for train-velocity/train-tracking: "
+            "unknown arguments are only passed through for train-velocity/train-tracking/sim-29dof-mujoco: "
             + " ".join(passthrough_args)
         )
     args.passthrough_args = [arg for arg in passthrough_args if arg != "--"]
+    if args.command == "sim-29dof-mujoco":
+        args.override.extend(args.passthrough_args)
+        args.passthrough_args = []
 
     if args.command == "status":
         _handle_status()
