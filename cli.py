@@ -669,7 +669,7 @@ def _handle_training_or_play(args: argparse.Namespace) -> int:
     if args.command == "play-tracking":
         return _run(ENGINE_ROOT, _play_command(args, tracking=True), dry_run=args.dry_run)
     if args.command == "play-onnx":
-        onnx_file = args.onnx_file or _latest_onnx(ENGINE_ROOT)
+        onnx_file = _resolve_user_path(args.onnx_file) if args.onnx_file else _latest_onnx(ENGINE_ROOT)
         command: list[object] = [
             args.python,
             ENGINE_ROOT / "scripts" / "play_onnx.py",

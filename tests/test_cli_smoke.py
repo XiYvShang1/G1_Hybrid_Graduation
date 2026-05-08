@@ -157,6 +157,7 @@ class CLISmokeTest(unittest.TestCase):
             "--dry-run",
         )
         self.assertIn("play_onnx.py", onnx_play)
+        self.assertIn("deploy/robots/g1_23dof/config/policy/velocity/v0/exported/policy.onnx", onnx_play)
         self.assertIn("--device=cpu", onnx_play)
         self.assertIn("--viewer=viser", onnx_play)
 
