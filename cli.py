@@ -282,14 +282,18 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_common_runtime_args(train_velocity)
     train_velocity.add_argument("--task", default=DEFAULT_VELOCITY_TASK)
     train_velocity.add_argument("--num-envs", type=int, default=4096)
+    train_velocity.add_argument("--max-iterations", type=int, help="Override PPO training iterations.")
     train_velocity.add_argument("--gpu-ids", nargs="*", type=int)
+    train_velocity.add_argument("--extra", nargs="*", default=[], help="Extra args passed to scripts/train.py.")
 
     train_tracking = subparsers.add_parser("train-tracking", help="Train the G1 23DoF motion-tracking policy.")
     _add_common_runtime_args(train_tracking)
     train_tracking.add_argument("--task", default=DEFAULT_TRACKING_TASK)
     train_tracking.add_argument("--motion-file", type=Path, default=DEFAULT_RUNTIME_MOTION)
     train_tracking.add_argument("--num-envs", type=int, default=4096)
+    train_tracking.add_argument("--max-iterations", type=int, help="Override PPO training iterations.")
     train_tracking.add_argument("--gpu-ids", nargs="*", type=int)
+    train_tracking.add_argument("--extra", nargs="*", default=[], help="Extra args passed to scripts/train.py.")
 
     play_velocity = subparsers.add_parser("play-velocity", help="Play a trained velocity checkpoint.")
     _add_common_runtime_args(play_velocity)
@@ -614,9 +618,12 @@ def _train_command(args: argparse.Namespace, *, tracking: bool) -> list[object]:
     if tracking:
         command.extend(["--motion-file", _resolve_user_path(args.motion_file)])
     command.append(f"--env.scene.num-envs={args.num_envs}")
+    if args.max_iterations is not None:
+        command.append(f"--agent.max-iterations={args.max_iterations}")
     if args.gpu_ids:
         command.append("--gpu-ids")
         command.extend(args.gpu_ids)
+    command.extend(args.extra)
     return command
 
 

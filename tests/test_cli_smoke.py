@@ -71,6 +71,20 @@ class CLISmokeTest(unittest.TestCase):
         self.assertIn("csv_to_npz.py", csv_to_npz)
         self.assertIn("g1_23dof", csv_to_npz)
 
+        low_cost_tracking = self._run(
+            "train-tracking",
+            "--num-envs",
+            "1",
+            "--max-iterations",
+            "200",
+            "--motion-file",
+            "runtime/example_motion/example_motion.npz",
+            "--dry-run",
+        )
+        self.assertIn("--env.scene.num-envs=1", low_cost_tracking)
+        self.assertIn("--agent.max-iterations=200", low_cost_tracking)
+        self.assertIn("example_motion.npz", low_cost_tracking)
+
     def test_pkl_to_csv_conversion(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
