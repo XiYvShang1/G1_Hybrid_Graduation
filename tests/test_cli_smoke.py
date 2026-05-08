@@ -85,6 +85,19 @@ class CLISmokeTest(unittest.TestCase):
         self.assertIn("--agent.max-iterations=200", low_cost_tracking)
         self.assertIn("example_motion.npz", low_cost_tracking)
 
+        native_override = self._run(
+            "train-tracking",
+            "--num-envs",
+            "1",
+            "--motion-file",
+            "runtime/example_motion/example_motion.npz",
+            "--agent.save-interval=50",
+            "--env.commands.motion.sampling-mode=start",
+            "--dry-run",
+        )
+        self.assertIn("--agent.save-interval=50", native_override)
+        self.assertIn("--env.commands.motion.sampling-mode=start", native_override)
+
     def test_pkl_to_csv_conversion(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)

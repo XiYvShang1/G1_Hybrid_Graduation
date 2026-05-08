@@ -624,6 +624,7 @@ def _train_command(args: argparse.Namespace, *, tracking: bool) -> list[object]:
         command.append("--gpu-ids")
         command.extend(args.gpu_ids)
     command.extend(args.extra)
+    command.extend(getattr(args, "passthrough_args", []))
     return command
 
 
@@ -740,7 +741,13 @@ def _handle_29dof_deploy(args: argparse.Namespace) -> int:
 def main() -> None:
     """CLI 主函数：解析参数，并按命令类型调用对应处理函数。"""
     parser = _build_parser()
-    args = parser.parse_args()
+    args, passthrough_args = parser.parse_known_args()
+    if passthrough_args and args.command not in {"train-velocity", "train-tracking"}:
+        parser.error(
+            "unknown arguments are only passed through for train-velocity/train-tracking: "
+            + " ".join(passthrough_args)
+        )
+    args.passthrough_args = [arg for arg in passthrough_args if arg != "--"]
 
     if args.command == "status":
         _handle_status()
