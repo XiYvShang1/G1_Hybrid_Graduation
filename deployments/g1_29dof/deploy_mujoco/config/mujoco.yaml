@@ -3,6 +3,8 @@ xml_path: "g1_description/scene.xml"
 display_num_joints: 23
 simulation_dt: 0.003
 control_decimation: 7
+render_fps: 30
+viser_port: 8080
 tau_limit: [88, 88, 88, 139, 50, 50,
             88, 88, 88, 139, 50, 50,
             88, 50, 50,

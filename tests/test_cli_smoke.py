@@ -139,6 +139,13 @@ class CLISmokeTest(unittest.TestCase):
         build = self._run("build-23dof-sim", "--dry-run")
         stack = self._run("sim-23dof-stack", "--dry-run")
         sim_29dof = self._run("sim-29dof-mujoco", "--dry-run")
+        sim_29dof_viser = self._run(
+            "sim-29dof-viser",
+            "simulation_dt=0.005",
+            "control_decimation=4",
+            "render_fps=20",
+            "--dry-run",
+        )
 
         self.assertIn("--viewer=viser", velocity_play)
         self.assertIn("--device=cpu", velocity_play)
@@ -166,6 +173,9 @@ class CLISmokeTest(unittest.TestCase):
         self.assertIn("g1_ctrl", stack)
         self.assertIn("deploy_mujoco.py", sim_29dof)
         self.assertIn("g1_29dof", sim_29dof)
+        self.assertIn("deploy_mujoco_viser.py", sim_29dof_viser)
+        self.assertIn("simulation_dt=0.005", sim_29dof_viser)
+        self.assertIn("control_decimation=4", sim_29dof_viser)
 
     def test_retarget_shortcuts_dry_run(self) -> None:
         video = self._run("video-to-smpl", "runtime/example_motion/input.mp4", "--person", "1", "--dry-run")

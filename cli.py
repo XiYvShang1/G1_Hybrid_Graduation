@@ -355,12 +355,21 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sim_29dof = subparsers.add_parser(
         "sim-29dof-mujoco",
-        help="Run the 29DoF trained-policy MuJoCo deployment demo.",
+        help="Run the 29DoF trained-policy MuJoCo native-viewer deployment demo.",
     )
     sim_29dof.add_argument("--python", default=DEFAULT_29DOF_PYTHON)
     sim_29dof.add_argument("--xml-path", help="Hydra override, e.g. g1_description/g1_29dof_LieDown.xml")
     sim_29dof.add_argument("--override", nargs="*", default=[], help="Extra Hydra overrides passed to deploy_mujoco.py.")
     sim_29dof.add_argument("--dry-run", action="store_true")
+
+    sim_29dof_viser = subparsers.add_parser(
+        "sim-29dof-viser",
+        help="Run the 29DoF trained-policy MuJoCo demo in a browser Viser viewer.",
+    )
+    sim_29dof_viser.add_argument("--python", default=DEFAULT_29DOF_PYTHON)
+    sim_29dof_viser.add_argument("--xml-path", help="Hydra override, e.g. g1_description/g1_29dof_LieDown.xml")
+    sim_29dof_viser.add_argument("--override", nargs="*", default=[], help="Extra Hydra overrides passed to deploy_mujoco_viser.py.")
+    sim_29dof_viser.add_argument("--dry-run", action="store_true")
 
     deploy_29dof_real = subparsers.add_parser(
         "deploy-29dof-real",
@@ -740,8 +749,9 @@ def _handle_29dof_deploy(args: argparse.Namespace) -> int:
 
     这层不参与 23DoF 训练闭环，主要用于已有 29DoF 策略的 MuJoCo 演示和真机部署复现。
     """
-    if args.command == "sim-29dof-mujoco":
-        command: list[object] = [args.python, DEPLOY_29DOF_ROOT / "deploy_mujoco" / "deploy_mujoco.py"]
+    if args.command in {"sim-29dof-mujoco", "sim-29dof-viser"}:
+        script_name = "deploy_mujoco_viser.py" if args.command == "sim-29dof-viser" else "deploy_mujoco.py"
+        command: list[object] = [args.python, DEPLOY_29DOF_ROOT / "deploy_mujoco" / script_name]
         if args.xml_path:
             command.append(f"xml_path={args.xml_path}")
         command.extend(args.override)
@@ -759,14 +769,14 @@ def main() -> None:
     """CLI 主函数：解析参数，并按命令类型调用对应处理函数。"""
     parser = _build_parser()
     args, passthrough_args = parser.parse_known_args()
-    passthrough_commands = {"train-velocity", "train-tracking", "sim-29dof-mujoco"}
+    passthrough_commands = {"train-velocity", "train-tracking", "sim-29dof-mujoco", "sim-29dof-viser"}
     if passthrough_args and args.command not in passthrough_commands:
         parser.error(
             "unknown arguments are only passed through for train-velocity/train-tracking/sim-29dof-mujoco: "
             + " ".join(passthrough_args)
         )
     args.passthrough_args = [arg for arg in passthrough_args if arg != "--"]
-    if args.command == "sim-29dof-mujoco":
+    if args.command in {"sim-29dof-mujoco", "sim-29dof-viser"}:
         args.override.extend(args.passthrough_args)
         args.passthrough_args = []
 
