@@ -145,6 +145,21 @@ class CLISmokeTest(unittest.TestCase):
         self.assertIn("--viewer=viser", tracking_play)
         self.assertIn("--device=cpu", tracking_play)
         self.assertIn("--no-terminations=True", tracking_play)
+
+        onnx_play = self._run(
+            "play-onnx",
+            "--onnx-file",
+            "engines/base_locomotion/deploy/robots/g1_23dof/config/policy/velocity/v0/exported/policy.onnx",
+            "--device",
+            "cpu",
+            "--viewer",
+            "viser",
+            "--dry-run",
+        )
+        self.assertIn("play_onnx.py", onnx_play)
+        self.assertIn("--device=cpu", onnx_play)
+        self.assertIn("--viewer=viser", onnx_play)
+
         self.assertIn("cmake -S simulate", build)
         self.assertIn("unitree_mujoco", stack)
         self.assertIn("g1_ctrl", stack)

@@ -322,6 +322,9 @@ def _build_parser() -> argparse.ArgumentParser:
     play_onnx.add_argument("--onnx-file", type=Path)
     play_onnx.add_argument("--motion-file", type=Path)
     play_onnx.add_argument("--num-envs", type=int, default=1)
+    play_onnx.add_argument("--device", default="cpu", help="Runtime device passed to play_onnx.py, e.g. cpu or cuda:0.")
+    play_onnx.add_argument("--viewer", choices=["auto", "native", "viser"], default="viser")
+    play_onnx.add_argument("--no-terminations", action="store_true")
 
     build_sim = subparsers.add_parser(
         "build-sim",
@@ -674,9 +677,13 @@ def _handle_training_or_play(args: argparse.Namespace) -> int:
             "--onnx-file",
             onnx_file,
             f"--num-envs={args.num_envs}",
+            f"--device={args.device}",
+            f"--viewer={args.viewer}",
         ]
         if args.motion_file:
             command.extend(["--motion-file", _resolve_user_path(args.motion_file)])
+        if args.no_terminations:
+            command.append("--no-terminations=True")
         return _run(ENGINE_ROOT, command, dry_run=args.dry_run)
     return -1
 
