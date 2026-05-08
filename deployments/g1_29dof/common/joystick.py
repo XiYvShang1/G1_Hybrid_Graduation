@@ -3,8 +3,10 @@ from common.path_config import PROJECT_ROOT
 import os
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-import pygame
-from pygame.locals import *
+try:
+    import pygame
+except ModuleNotFoundError:
+    pygame = None
 from enum import IntEnum, unique
 
 
@@ -29,10 +31,21 @@ class JoystickButton(IntEnum):
 
 class JoyStick:
     def __init__(self):
+        self.keyboard_mode = False
+        if pygame is None:
+            self.keyboard_mode = True
+            self.joystick = None
+            self.button_count = max([b.value for b in JoystickButton]) + 1
+            self.axis_count = 4
+            self.hat_count = 0
+            print("[手柄] 未安装 pygame，已切换到 MuJoCo 键盘控制模式。")
+            print("[手柄] 如需 Xbox/手柄输入，请安装 pygame；仅键盘演示不需要。")
+            self._init_state_buffers()
+            return
+
         pygame.init()
         pygame.joystick.init()
 
-        self.keyboard_mode = False
         joystick_count = pygame.joystick.get_count()
 
         if joystick_count == 0:
@@ -50,6 +63,9 @@ class JoyStick:
             self.axis_count = self.joystick.get_numaxes()
             self.hat_count = self.joystick.get_numhats()
 
+        self._init_state_buffers()
+
+    def _init_state_buffers(self):
         self.button_states = [False] * self.button_count
         self.button_pressed = [False] * self.button_count
         self.button_released = [False] * self.button_count
@@ -58,8 +74,12 @@ class JoyStick:
 
     def update(self):
         """update joystick/keyboard state"""
-        pygame.event.pump()
         self.button_released = [False] * self.button_count
+
+        if pygame is None:
+            return
+
+        pygame.event.pump()
 
         if self.keyboard_mode:
             keys = pygame.key.get_pressed()
