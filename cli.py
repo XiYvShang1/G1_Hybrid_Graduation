@@ -301,6 +301,9 @@ def _build_parser() -> argparse.ArgumentParser:
     play_velocity.add_argument("--checkpoint", type=Path)
     play_velocity.add_argument("--num-envs", type=int, default=1)
     play_velocity.add_argument("--agent", choices=["trained", "zero", "random"], default="trained")
+    play_velocity.add_argument("--device", default="cpu", help="Runtime device passed to play.py, e.g. cpu or cuda:0.")
+    play_velocity.add_argument("--viewer", choices=["auto", "native", "viser"], default="viser")
+    play_velocity.add_argument("--no-terminations", action="store_true")
 
     play_tracking = subparsers.add_parser("play-tracking", help="Play a trained motion-tracking checkpoint.")
     _add_common_runtime_args(play_tracking)
@@ -309,6 +312,9 @@ def _build_parser() -> argparse.ArgumentParser:
     play_tracking.add_argument("--checkpoint", type=Path)
     play_tracking.add_argument("--num-envs", type=int, default=1)
     play_tracking.add_argument("--agent", choices=["trained", "zero", "random"], default="trained")
+    play_tracking.add_argument("--device", default="cpu", help="Runtime device passed to play.py, e.g. cpu or cuda:0.")
+    play_tracking.add_argument("--viewer", choices=["auto", "native", "viser"], default="viser")
+    play_tracking.add_argument("--no-terminations", action="store_true")
 
     play_onnx = subparsers.add_parser("play-onnx", help="Play an exported ONNX policy.")
     _add_common_runtime_args(play_onnx)
@@ -636,12 +642,16 @@ def _play_command(args: argparse.Namespace, *, tracking: bool) -> list[object]:
         args.task,
         f"--agent={args.agent}",
         f"--num-envs={args.num_envs}",
+        f"--device={args.device}",
+        f"--viewer={args.viewer}",
     ]
     if tracking:
         command.extend(["--motion-file", _resolve_user_path(args.motion_file)])
     if args.agent == "trained":
         checkpoint = args.checkpoint or _latest_checkpoint(ENGINE_ROOT)
         command.extend(["--checkpoint-file", checkpoint])
+    if args.no_terminations:
+        command.append("--no-terminations=True")
     return command
 
 

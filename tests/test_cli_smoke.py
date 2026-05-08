@@ -122,10 +122,29 @@ class CLISmokeTest(unittest.TestCase):
             self.assertEqual(converted.shape, (frames, 30))
 
     def test_sim_shortcuts_dry_run(self) -> None:
+        velocity_play = self._run("play-velocity", "--agent", "zero", "--viewer", "viser", "--device", "cpu", "--dry-run")
+        tracking_play = self._run(
+            "play-tracking",
+            "--agent",
+            "zero",
+            "--motion-file",
+            "runtime/example_motion/example_motion.npz",
+            "--viewer",
+            "viser",
+            "--device",
+            "cpu",
+            "--no-terminations",
+            "--dry-run",
+        )
         build = self._run("build-23dof-sim", "--dry-run")
         stack = self._run("sim-23dof-stack", "--dry-run")
         sim_29dof = self._run("sim-29dof-mujoco", "--dry-run")
 
+        self.assertIn("--viewer=viser", velocity_play)
+        self.assertIn("--device=cpu", velocity_play)
+        self.assertIn("--viewer=viser", tracking_play)
+        self.assertIn("--device=cpu", tracking_play)
+        self.assertIn("--no-terminations=True", tracking_play)
         self.assertIn("cmake -S simulate", build)
         self.assertIn("unitree_mujoco", stack)
         self.assertIn("g1_ctrl", stack)
