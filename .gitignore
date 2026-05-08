@@ -66,3 +66,6 @@ motion_pipeline/backends/gvhmr/**/*.mp4
 motion_pipeline/backends/gvhmr/**/*.gif
 motion_pipeline/backends/gvhmr/**/*.ipynb
 motion_pipeline/backends/gvhmr/**/checkpoints/
+
+# 29DoF Hydra/MuJoCo local outputs
+deployments/g1_29dof/outputs/
