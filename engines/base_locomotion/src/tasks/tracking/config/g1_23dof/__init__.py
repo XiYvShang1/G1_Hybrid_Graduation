@@ -18,3 +18,16 @@ register_mjlab_task(
   rl_cfg=unitree_g1_23dof_tracking_ppo_runner_cfg(),
   runner_cls=MotionTrackingOnPolicyRunner,
 )
+
+# 预训练 mimic ONNX 使用的是不含状态估计项的 124 维 actor 观测。
+# 保留默认 130 维任务用于后续重新训练，同时单独注册一个回放/部署兼容任务。
+register_mjlab_task(
+  task_id="Unitree-G1-23Dof-Tracking-No-State-Estimation",
+  env_cfg=unitree_g1_23dof_flat_tracking_env_cfg(has_state_estimation=False),
+  play_env_cfg=unitree_g1_23dof_flat_tracking_env_cfg(
+    has_state_estimation=False,
+    play=True,
+  ),
+  rl_cfg=unitree_g1_23dof_tracking_ppo_runner_cfg(),
+  runner_cls=MotionTrackingOnPolicyRunner,
+)

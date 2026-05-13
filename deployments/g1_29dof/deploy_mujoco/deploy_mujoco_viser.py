@@ -26,6 +26,16 @@ Safety: Passive / Default Pose / StandUp
 ```"""
 
 
+def print_render_backend_info():
+    """Print render-related environment so demo machines can be checked quickly."""
+    mujoco_gl = os.environ.get("MUJOCO_GL", "<unset>")
+    adapter = os.environ.get("MESA_D3D12_DEFAULT_ADAPTER_NAME", "<unset>")
+    glx_vendor = os.environ.get("__GLX_VENDOR_LIBRARY_NAME", "<unset>")
+    print(f"[渲染] MUJOCO_GL={mujoco_gl}")
+    print(f"[渲染] MESA_D3D12_DEFAULT_ADAPTER_NAME={adapter}")
+    print(f"[渲染] __GLX_VENDOR_LIBRARY_NAME={glx_vendor}")
+
+
 def geom_color(name: str | None) -> tuple[int, int, int]:
     """按身体区域给 mesh 上色，避免浏览器里只有单调灰白模型。"""
     name = name or ""
@@ -293,6 +303,7 @@ def main(cfg: DictConfig):
     display_num_joints = cfg.get("display_num_joints", num_joints)
 
     print("[系统] G1 Mimic Skill Viser 演示启动中...")
+    print_render_backend_info()
     print(f"[系统] 展示关节数: {display_num_joints}")
     print(f"[系统] 底层 MuJoCo actuator 数: {num_joints}")
     print(f"[系统] 控制周期: {simulation_dt * control_decimation:.4f}s")

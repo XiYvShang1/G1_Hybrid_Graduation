@@ -19,6 +19,16 @@ import hydra
 import glfw
 
 
+def print_render_backend_info():
+    """Print the OpenGL-related environment used by MuJoCo before the viewer starts."""
+    mujoco_gl = os.environ.get("MUJOCO_GL", "<unset>")
+    adapter = os.environ.get("MESA_D3D12_DEFAULT_ADAPTER_NAME", "<unset>")
+    glx_vendor = os.environ.get("__GLX_VENDOR_LIBRARY_NAME", "<unset>")
+    print(f"[渲染] MUJOCO_GL={mujoco_gl}")
+    print(f"[渲染] MESA_D3D12_DEFAULT_ADAPTER_NAME={adapter}")
+    print(f"[渲染] __GLX_VENDOR_LIBRARY_NAME={glx_vendor}")
+
+
 def pd_control(target_q, q, kp, target_dq, dq, kd):
     """Calculates torques from position commands"""
     return (target_q - q) * kp + (target_dq - dq) * kd
@@ -38,6 +48,7 @@ def main(cfg: DictConfig):
     num_joints = m.nu
     display_num_joints = cfg.get("display_num_joints", num_joints)
     print("[\u7cfb\u7edf] RoboMimicDeploy_G1 MuJoCo \u6f14\u793a\u542f\u52a8\u4e2d...")
+    print_render_backend_info()
     print(f"[\u7cfb\u7edf] \u673a\u5668\u4eba\u5173\u8282\u6570: {display_num_joints}")
     if display_num_joints != num_joints:
         print(f"[\u7cfb\u7edf] MuJoCo \u5e95\u5c42 actuator \u6570: {num_joints}")

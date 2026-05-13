@@ -144,13 +144,19 @@ def _format_dry_run_command(cwd: Path, args: list[object]) -> str:
     return f"cd {cwd_text} && {command_text}"
 
 
-def _run(cwd: Path, args: list[object], *, dry_run: bool = False) -> int:
+def _run(cwd: Path, args: list[object], *, dry_run: bool = False, env: dict[str, str] | None = None) -> int:
     """执行命令；dry-run 模式只打印最终命令，不真正启动训练或仿真。"""
     command = _build_process_command(cwd, args)
     if dry_run:
-        print(_format_dry_run_command(cwd, args))
+        prefix = ""
+        if env:
+            prefix = " ".join(f"{key}={shlex.quote(value)}" for key, value in env.items()) + " "
+        print(prefix + _format_dry_run_command(cwd, args))
         return 0
-    completed = subprocess.run(command, cwd=cwd if command[0] != "wsl.exe" else None)
+    process_env = os.environ.copy()
+    if env:
+        process_env.update(env)
+    completed = subprocess.run(command, cwd=cwd if command[0] != "wsl.exe" else None, env=process_env)
     return completed.returncode
 
 
@@ -325,6 +331,27 @@ def _build_parser() -> argparse.ArgumentParser:
     play_onnx.add_argument("--device", default="cpu", help="Runtime device passed to play_onnx.py, e.g. cpu or cuda:0.")
     play_onnx.add_argument("--viewer", choices=["auto", "native", "viser"], default="viser")
     play_onnx.add_argument("--no-terminations", action="store_true")
+    play_onnx.add_argument("--command-source", choices=["viser", "fixed", "random"], default="viser", help="Velocity command source used during ONNX play.")
+    play_onnx.add_argument("--command-vx", type=float, default=0.0, help="Initial or fixed forward velocity command.")
+    play_onnx.add_argument("--command-vy", type=float, default=0.0, help="Initial or fixed lateral velocity command.")
+    play_onnx.add_argument("--command-yaw", type=float, default=0.0, help="Initial or fixed yaw velocity command.")
+    play_onnx.add_argument("--keyboard-step", type=float, default=0.3, help="Linear velocity command used by browser quick buttons 8/2/4/6.")
+    play_onnx.add_argument("--keyboard-yaw-step", type=float, default=0.5, help="Yaw command used by browser quick buttons 7/9.")
+    play_onnx.add_argument("--stability-push-scale", type=float, default=1.0, help="Scale for the original training push_robot disturbance used by browser '.' test.")
+    play_onnx.add_argument("--hide-reference-motion", action="store_true", help="Hide the translucent reference/ghost motion in tracking playback.")
+
+    play_velocity_lite = subparsers.add_parser(
+        "play-velocity-lite",
+        help="Play the exported 23DoF velocity ONNX with a lightweight native MuJoCo loop.",
+    )
+    play_velocity_lite.add_argument("--python", default=DEFAULT_MJLAB_PYTHON)
+    play_velocity_lite.add_argument("--onnx-file", type=Path, default=DEPLOY_23DOF_ROOT / "config" / "policy" / "velocity" / "v0" / "exported" / "policy.onnx")
+    play_velocity_lite.add_argument("--xml-file", type=Path, default=None)
+    play_velocity_lite.add_argument("--vx", type=float, default=0.0)
+    play_velocity_lite.add_argument("--vy", type=float, default=0.0)
+    play_velocity_lite.add_argument("--yaw", type=float, default=0.0)
+    play_velocity_lite.add_argument("--dry-run", action="store_true")
+    play_velocity_lite.add_argument("--extra", nargs="*", default=[], help="Extra args passed to play_velocity_lite.py.")
 
     build_sim = subparsers.add_parser(
         "build-sim",
@@ -358,6 +385,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run the 29DoF trained-policy MuJoCo native-viewer deployment demo.",
     )
     sim_29dof.add_argument("--python", default=DEFAULT_29DOF_PYTHON)
+    sim_29dof.add_argument(
+        "--gpu-adapter",
+        default=os.environ.get("MESA_D3D12_DEFAULT_ADAPTER_NAME"),
+        help="WSL/Mesa D3D12 adapter name, for example NVIDIA. Default: current environment.",
+    )
+    sim_29dof.add_argument(
+        "--mujoco-gl",
+        choices=["glfw", "egl", "osmesa"],
+        default=os.environ.get("MUJOCO_GL"),
+        help="MuJoCo OpenGL backend. Use glfw for the native window; egl is mainly for offscreen/headless render.",
+    )
     sim_29dof.add_argument("--xml-path", help="Hydra override, e.g. g1_description/g1_29dof_LieDown.xml")
     sim_29dof.add_argument("--override", nargs="*", default=[], help="Extra Hydra overrides passed to deploy_mujoco.py.")
     sim_29dof.add_argument("--dry-run", action="store_true")
@@ -368,6 +406,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run the G1 Mimic Skill MuJoCo demo in a browser Viser viewer.",
     )
     sim_29dof_viser.add_argument("--python", default=DEFAULT_29DOF_PYTHON)
+    sim_29dof_viser.add_argument(
+        "--gpu-adapter",
+        default=os.environ.get("MESA_D3D12_DEFAULT_ADAPTER_NAME"),
+        help="WSL/Mesa D3D12 adapter name, for example NVIDIA. Mostly useful when MuJoCo needs an OpenGL context.",
+    )
+    sim_29dof_viser.add_argument(
+        "--mujoco-gl",
+        choices=["glfw", "egl", "osmesa"],
+        default=os.environ.get("MUJOCO_GL"),
+        help="Optional MuJoCo OpenGL backend. Leave unset for the browser Viser path unless you are debugging rendering.",
+    )
     sim_29dof_viser.add_argument("--xml-path", help="Hydra override, e.g. g1_description/g1_29dof_LieDown.xml")
     sim_29dof_viser.add_argument("--override", nargs="*", default=[], help="Extra Hydra overrides passed to deploy_mujoco_viser.py.")
     sim_29dof_viser.add_argument("--dry-run", action="store_true")
@@ -678,6 +727,21 @@ def _handle_training_or_play(args: argparse.Namespace) -> int:
         return _run(ENGINE_ROOT, _play_command(args, tracking=False), dry_run=args.dry_run)
     if args.command == "play-tracking":
         return _run(ENGINE_ROOT, _play_command(args, tracking=True), dry_run=args.dry_run)
+    if args.command == "play-velocity-lite":
+        command: list[object] = [
+            args.python,
+            ENGINE_ROOT / "scripts" / "play_velocity_lite.py",
+            "--onnx-file",
+            _resolve_user_path(args.onnx_file),
+            f"--vx={args.vx}",
+            f"--vy={args.vy}",
+            f"--yaw={args.yaw}",
+        ]
+        if args.xml_file is not None:
+            command.extend(["--xml-file", _resolve_user_path(args.xml_file)])
+        command.extend(args.extra)
+        command.extend(getattr(args, "passthrough_args", []))
+        return _run(ENGINE_ROOT, command, dry_run=args.dry_run)
     if args.command == "play-onnx":
         onnx_file = _resolve_user_path(args.onnx_file) if args.onnx_file else _latest_onnx(ENGINE_ROOT)
         command: list[object] = [
@@ -689,7 +753,16 @@ def _handle_training_or_play(args: argparse.Namespace) -> int:
             f"--num-envs={args.num_envs}",
             f"--device={args.device}",
             f"--viewer={args.viewer}",
+            f"--command-source={args.command_source}",
+            f"--command-vx={args.command_vx}",
+            f"--command-vy={args.command_vy}",
+            f"--command-yaw={args.command_yaw}",
+            f"--keyboard-step={args.keyboard_step}",
+            f"--keyboard-yaw-step={args.keyboard_yaw_step}",
+            f"--stability-push-scale={args.stability_push_scale}",
         ]
+        if args.hide_reference_motion:
+            command.append("--hide-reference-motion=True")
         if args.motion_file:
             command.extend(["--motion-file", _resolve_user_path(args.motion_file)])
         if args.no_terminations:
@@ -756,7 +829,12 @@ def _handle_29dof_deploy(args: argparse.Namespace) -> int:
         if args.xml_path:
             command.append(f"xml_path={args.xml_path}")
         command.extend(args.override)
-        return _run(DEPLOY_29DOF_ROOT, command, dry_run=args.dry_run)
+        env: dict[str, str] = {}
+        if args.gpu_adapter:
+            env["MESA_D3D12_DEFAULT_ADAPTER_NAME"] = args.gpu_adapter
+        if args.mujoco_gl:
+            env["MUJOCO_GL"] = args.mujoco_gl
+        return _run(DEPLOY_29DOF_ROOT, command, dry_run=args.dry_run, env=env or None)
     if args.command == "deploy-29dof-real":
         return _run(
             DEPLOY_29DOF_ROOT,
@@ -770,7 +848,7 @@ def main() -> None:
     """CLI 主函数：解析参数，并按命令类型调用对应处理函数。"""
     parser = _build_parser()
     args, passthrough_args = parser.parse_known_args()
-    passthrough_commands = {"train-velocity", "train-tracking", "sim-29dof-mujoco", "sim-29dof-viser", "sim-mimic-skill"}
+    passthrough_commands = {"train-velocity", "train-tracking", "play-velocity-lite", "sim-29dof-mujoco", "sim-29dof-viser", "sim-mimic-skill"}
     if passthrough_args and args.command not in passthrough_commands:
         parser.error(
             "unknown arguments are only passed through for train-velocity/train-tracking/sim-29dof-mujoco: "
